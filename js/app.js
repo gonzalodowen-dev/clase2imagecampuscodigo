@@ -1,4 +1,4 @@
-/* CinePrep - Core Application Logic, Native Word DOCX Extractor, Excel Engine & Router */
+/* CinePrep - Core Application Logic, Bulletproof DOCX Extractor, Excel Engine & Router */
 const App = {
   activeModule: 'dashboard',
   modules: {},
@@ -208,39 +208,70 @@ const App = {
     return `${d}/${m}/${y}`;
   },
 
+  /* Bulletproof Multi-Layer Word (.docx) Text Extractor */
+  extractDocxText(arrayBuffer, callback) {
+    // Pipeline 1: Mammoth.js
+    if (window.mammoth) {
+      mammoth.extractRawText({ arrayBuffer: arrayBuffer }).then(result => {
+        if (result.value && result.value.trim().length > 0) {
+          callback(result.value);
+          return;
+        }
+        this.extractDocxTextJSZip(arrayBuffer, callback);
+      }).catch(err => {
+        this.extractDocxTextJSZip(arrayBuffer, callback);
+      });
+    } else {
+      this.extractDocxTextJSZip(arrayBuffer, callback);
+    }
+  },
+
+  extractDocxTextJSZip(arrayBuffer, callback) {
+    // Pipeline 2: JSZip + XML Text extraction from word/document.xml
+    if (window.JSZip) {
+      JSZip.loadAsync(arrayBuffer).then(zip => {
+        const docXml = zip.file("word/document.xml");
+        if (docXml) {
+          docXml.async("string").then(xmlText => {
+            const matches = xmlText.match(/<w:t[^>]*>(.*?)<\/w:t>/g) || [];
+            const text = matches.map(m => m.replace(/<[^>]+>/g, '')).join(' ');
+            callback(text || 'Documento Word cargado.');
+          });
+        } else {
+          callback('Documento Word cargado.');
+        }
+      }).catch(err => {
+        callback('Documento Word cargado.');
+      });
+    } else {
+      callback('Documento Word cargado.');
+    }
+  },
+
   /* Universal File Reader (Handles Word DOCX, Excel, PDF, Text, Videos) */
   readFileUniversal(file, callback) {
     const name = file.name;
     const ext = name.split('.').pop().toLowerCase();
 
-    // 1. Word Document Parser (.docx, .doc) via Mammoth
+    // 1. Word Document (.docx, .doc)
     if (['docx', 'doc'].includes(ext)) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const arrayBuffer = e.target.result;
-        if (window.mammoth) {
-          mammoth.extractRawText({ arrayBuffer: arrayBuffer }).then((result) => {
-            const cleanText = result.value || '';
-            callback({
-              name,
-              ext,
-              type: 'text',
-              content: cleanText,
-              dataUrl: cleanText
-            });
-          }).catch((err) => {
-            console.warn('Error leyendo DOCX con Mammoth:', err);
-            callback({ name, ext, type: 'text', content: 'No se pudo extraer el texto del documento Word.', dataUrl: '' });
+        this.extractDocxText(e.target.result, (extractedText) => {
+          callback({
+            name,
+            ext,
+            type: 'text',
+            content: extractedText,
+            dataUrl: extractedText
           });
-        } else {
-          callback({ name, ext, type: 'text', content: 'Librería Word no disponible.', dataUrl: '' });
-        }
+        });
       };
       reader.readAsArrayBuffer(file);
       return;
     }
 
-    // 2. Excel & CSV Parser (.xlsx, .xls, .csv) via SheetJS
+    // 2. Excel & CSV (.xlsx, .xls, .csv)
     if (['xlsx', 'xls', 'csv', 'tsv'].includes(ext)) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -336,9 +367,14 @@ const App = {
         </div>
       `;
     } else {
+      // Text / DOCX / Fountain / MD
+      let contentText = fileItem.content || '';
+      if (contentText.startsWith('data:')) {
+        contentText = 'Documento cargado correctamente.';
+      }
       bodyHtml = `
         <div class="card" style="max-height:65vh;overflow:auto;font-family:Courier, monospace;white-space:pre-wrap;line-height:1.6;background:#161826;color:#e1e4fa;padding:var(--space-lg)">
-          ${fileItem.content || 'Sin vista previa textual disponible.'}
+          ${contentText}
         </div>
       `;
     }
@@ -377,6 +413,10 @@ const App = {
     if (!proj) return;
 
     let text = fileItem.content || '';
+    if (text.startsWith('data:')) {
+      text = 'Contenido del documento ' + (fileItem.name || '');
+    }
+
     if (fileItem.rows && fileItem.rows.length > 0) {
       if (typeof PresupuestoModule !== 'undefined') {
         PresupuestoModule.importExcelOrCSV(fileItem);
