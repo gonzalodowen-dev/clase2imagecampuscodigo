@@ -1,4 +1,4 @@
-/* CinePrep - Core Application Logic, In-App File Viewers (PDF, DOCX, XLSX, MP4, MOV), Auto-Parser & Router */
+/* CinePrep - Core Application Logic & Router */
 const App = {
   activeModule: 'dashboard',
   modules: {},
@@ -18,6 +18,7 @@ const App = {
   setupNavigation() {
     document.querySelectorAll('.nav-item').forEach(item => {
       item.onclick = (e) => {
+        e.preventDefault();
         const moduleName = item.dataset.module;
         if (moduleName) this.navigate(moduleName);
       };
@@ -280,7 +281,7 @@ const App = {
         </div>
       `;
     } else if (['xls', 'xlsx', 'csv'].includes(ext) || type === 'excel') {
-      const rows = fileItem.rows || (fileItem.content ? fileItem.content.split('\n').map(r => r.split(/[,;	]/)) : []);
+      const rows = fileItem.rows || (fileItem.content ? fileItem.content.split('\n').map(r => r.split(/[,;\t]/)) : []);
       bodyHtml = `
         <div class="table-container" style="max-height:65vh;overflow:auto">
           <table class="data-table">
@@ -360,9 +361,7 @@ const App = {
       proj.guion.sinopsisCorta = firstPara.slice(0, 300) + '.';
     }
 
-    const sceneRegex = /(?:INT\.|EXT\.|INT\/EXT\.)\s+([^
-\-]+)(?:\s*-\s*([^
-]+))?/gi;
+    const sceneRegex = /(?:INT\.|EXT\.|INT\/EXT\.)\s+([^\n\-]+)(?:\s*-\s*([^\n]+))?/gi;
     let match;
     const scenes = [];
     const tarjetas = [];
