@@ -1,4 +1,4 @@
-/* CinePrep - Core Application Logic & Bulletproof Navigation Engine */
+/* CinePrep - Core Application Logic, Native Word DOCX Extractor, Excel Engine & Router */
 const App = {
   activeModule: 'dashboard',
   modules: {},
@@ -208,11 +208,39 @@ const App = {
     return `${d}/${m}/${y}`;
   },
 
-  /* Universal File Reader & Native Excel (.xlsx, .xls, .csv, .txt) Processor */
+  /* Universal File Reader (Handles Word DOCX, Excel, PDF, Text, Videos) */
   readFileUniversal(file, callback) {
     const name = file.name;
     const ext = name.split('.').pop().toLowerCase();
 
+    // 1. Word Document Parser (.docx, .doc) via Mammoth
+    if (['docx', 'doc'].includes(ext)) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const arrayBuffer = e.target.result;
+        if (window.mammoth) {
+          mammoth.extractRawText({ arrayBuffer: arrayBuffer }).then((result) => {
+            const cleanText = result.value || '';
+            callback({
+              name,
+              ext,
+              type: 'text',
+              content: cleanText,
+              dataUrl: cleanText
+            });
+          }).catch((err) => {
+            console.warn('Error leyendo DOCX con Mammoth:', err);
+            callback({ name, ext, type: 'text', content: 'No se pudo extraer el texto del documento Word.', dataUrl: '' });
+          });
+        } else {
+          callback({ name, ext, type: 'text', content: 'Librería Word no disponible.', dataUrl: '' });
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+
+    // 2. Excel & CSV Parser (.xlsx, .xls, .csv) via SheetJS
     if (['xlsx', 'xls', 'csv', 'tsv'].includes(ext)) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -233,24 +261,29 @@ const App = {
         textReader.readAsText(file);
       };
       reader.readAsArrayBuffer(file);
-    } else if (['txt', 'fountain', 'md', 'json', 'log', 'rtf'].includes(ext)) {
+      return;
+    }
+
+    // 3. Plain Text / Fountain / Script / JSON
+    if (['txt', 'fountain', 'md', 'json', 'log', 'rtf'].includes(ext)) {
       const reader = new FileReader();
       reader.onload = (e) => callback({ name, ext, type: 'text', content: e.target.result, dataUrl: e.target.result });
       reader.readAsText(file);
-    } else {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        let type = 'file';
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) type = 'image';
-        else if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) type = 'video';
-        else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) type = 'audio';
-        else if (ext === 'pdf') type = 'pdf';
-        else if (['doc', 'docx', 'ppt', 'pptx'].includes(ext)) type = 'document';
-
-        callback({ name, ext, type, dataUrl: e.target.result, content: e.target.result });
-      };
-      reader.readAsDataURL(file);
+      return;
     }
+
+    // 4. Media & PDF Files (DataURL)
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      let type = 'file';
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) type = 'image';
+      else if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) type = 'video';
+      else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) type = 'audio';
+      else if (ext === 'pdf') type = 'pdf';
+
+      callback({ name, ext, type, dataUrl: e.target.result, content: e.target.result });
+    };
+    reader.readAsDataURL(file);
   },
 
   /* In-App Native File Viewer (PDF, DOCX, XLSX, MP4, MOV, Audio, Images) */
