@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="description" content="CinePrep - Asistente profesional de pre-producción cinematográfica. Aplicación descargable para PC, Celular y Tablet con funcionamiento 100% offline.">
+  <meta name="description" content="CinePrep - Asistente profesional de pre-producción cinematográfica. Visor de archivos PDF, DOCS, EXCEL, MP4, MOV en la app y desglose inteligente.">
   <meta name="theme-color" content="#0b0d17">
   
   <!-- PWA & Mobile Web App Meta Tags -->
@@ -28,7 +28,7 @@
 </head>
 <body>
   <div id="app">
-    <!-- Mobile Header & Menu Button -->
+    <!-- Mobile Header Bar -->
     <div class="mobile-header-bar flex justify-between items-center" style="display:none;padding:10px 16px;background:var(--bg-card);border-bottom:1px solid var(--border-subtle);position:sticky;top:0;z-index:100;">
       <div class="flex items-center gap-xs font-bold text-gold" style="font-size:1.1rem">
         <span>🎬</span> CinePrep
@@ -41,7 +41,7 @@
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="sidebar-logo">
@@ -54,6 +54,10 @@
         <div class="nav-item active" data-module="dashboard">
           <span class="nav-icon">🎬</span>
           <span>Proyectos & Inicio</span>
+        </div>
+        <div class="nav-item" data-module="drive">
+          <span class="nav-icon">📁</span>
+          <span>Archivos & Nube Drive</span>
         </div>
 
         <div class="nav-section-label">Desarrollo Creativo</div>
@@ -150,6 +154,7 @@
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/drive.js"></script>
   <script src="js/guion.js"></script>
   <script src="js/guion-tecnico.js"></script>
   <script src="js/storyboard.js"></script>

@@ -1,4 +1,4 @@
-/* CinePrep - Core Application Logic, PWA Installer, Excel Engine & Router */
+/* CinePrep - Core Application Logic, In-App File Viewers (PDF, DOCX, XLSX, MP4, MOV), Auto-Parser & Router */
 const App = {
   activeModule: 'dashboard',
   modules: {},
@@ -50,18 +50,14 @@ const App = {
   },
 
   setupPwa() {
-    // Register Service Worker for Offline & App Installation
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').then(reg => {
-          console.log('CinePrep Service Worker registrado con éxito:', reg.scope);
-        }).catch(err => {
-          console.log('Error registrando Service Worker:', err);
-        });
+          console.log('CinePrep Service Worker registrado:', reg.scope);
+        }).catch(err => {});
       });
     }
 
-    // Capture install prompt event
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       this.deferredPrompt = e;
@@ -89,30 +85,24 @@ const App = {
       return;
     }
 
-    // Modal with instructions for all platforms
     this.showModal(`
       <div class="modal-header"><h2>📲 Instalar CinePrep en tu Dispositivo</h2><button class="modal-close">&times;</button></div>
       <div class="modal-body" style="font-size:0.95rem;line-height:1.6">
-        <p class="mb-md">CinePrep se puede instalar como aplicación nativa descargable en <strong>Computadoras (Windows / Mac)</strong>, <strong>Celulares (Android / iPhone)</strong> y <strong>Tablets (iPad)</strong> para funcionar 100% offline sin necesidad de internet.</p>
-        
+        <p class="mb-md">CinePrep se puede instalar como aplicación nativa en <strong>Computadoras (Windows / Mac)</strong>, <strong>Celulares (Android / iPhone)</strong> y <strong>Tablets</strong> para funcionar 100% offline sin internet.</p>
         <div class="card mb-sm" style="background:var(--bg-elevated);border:1px solid var(--border-strong);">
           <h4 style="color:var(--accent-gold);margin-bottom:4px">💻 En Computadoras (Chrome / Edge / Brave)</h4>
-          <p style="font-size:0.85rem;color:var(--text-secondary)">Hacé clic en el ícono de instalación <strong>⊕ (Instalar CinePrep)</strong> ubicado en la parte derecha de la barra de direcciones de tu navegador, o hacé clic en los 3 puntos del menú y selecciona <em>"Instalar CinePrep..."</em>.</p>
+          <p style="font-size:0.85rem;color:var(--text-secondary)">Hacé clic en el ícono de instalación <strong>⊕ (Instalar CinePrep)</strong> en la barra de direcciones de tu navegador.</p>
         </div>
-
         <div class="card mb-sm" style="background:var(--bg-elevated);border:1px solid var(--border-strong);">
-          <h4 style="color:var(--accent-gold);margin-bottom:4px">📱 En Celulares y Tablets Android</h4>
-          <p style="font-size:0.85rem;color:var(--text-secondary)">Abrí el menú de 3 puntos (⋮) arriba a la derecha en Chrome y seleccioná <strong>"Agregar a la pantalla principal"</strong> o <strong>"Instalar aplicación"</strong>.</p>
+          <h4 style="color:var(--accent-gold);margin-bottom:4px">📱 En Celulares Android</h4>
+          <p style="font-size:0.85rem;color:var(--text-secondary)">Abrí el menú de 3 puntos (⋮) en Chrome y seleccioná <strong>"Agregar a la pantalla principal"</strong>.</p>
         </div>
-
         <div class="card" style="background:var(--bg-elevated);border:1px solid var(--border-strong);">
           <h4 style="color:var(--accent-gold);margin-bottom:4px">🍎 En iPhone / iPad (Safari)</h4>
-          <p style="font-size:0.85rem;color:var(--text-secondary)">Toca el botón <strong>Compartir (🗍)</strong> en la barra inferior de Safari y selecciona <strong>"Agregar a inicio"</strong> (Add to Home Screen).</p>
+          <p style="font-size:0.85rem;color:var(--text-secondary)">Toca el botón <strong>Compartir (🗍)</strong> en Safari y selecciona <strong>"Agregar a inicio"</strong>.</p>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary modal-close">Entendido</button>
-      </div>
+      <div class="modal-footer"><button class="btn btn-primary modal-close">Entendido</button></div>
     `);
   },
 
@@ -292,9 +282,7 @@ const App = {
             callback({ name, ext, type: 'excel', rows: jsonRows, content: csvContent, dataUrl: csvContent });
             return;
           }
-        } catch (err) {
-          console.warn('SheetJS error, falling back to text reader:', err);
-        }
+        } catch (err) {}
 
         const textReader = new FileReader();
         textReader.onload = (evt) => callback({ name, ext, type: 'text', content: evt.target.result, dataUrl: evt.target.result });
@@ -311,7 +299,7 @@ const App = {
         let type = 'file';
         if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) type = 'image';
         else if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) type = 'video';
-        else if (['mp3', 'wav', 'ogg'].includes(ext)) type = 'audio';
+        else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) type = 'audio';
         else if (ext === 'pdf') type = 'pdf';
         else if (['doc', 'docx', 'ppt', 'pptx'].includes(ext)) type = 'document';
 
@@ -319,6 +307,176 @@ const App = {
       };
       reader.readAsDataURL(file);
     }
+  },
+
+  /* In-App Native File Viewer (PDF, DOCX, XLSX, MP4, MOV, Audio, Images) */
+  showInAppFileViewer(fileItem) {
+    const ext = (fileItem.ext || '').toLowerCase();
+    const type = fileItem.type || 'file';
+    const name = fileItem.name || 'Archivo';
+    const src = fileItem.dataUrl || fileItem.content;
+
+    let bodyHtml = '';
+
+    if (ext === 'pdf' || (type === 'pdf')) {
+      bodyHtml = `
+        <div style="width:100%;height:70vh;background:#1a1c29;border-radius:8px;overflow:hidden">
+          <iframe src="${src}" style="width:100%;height:100%;border:none;"></iframe>
+        </div>
+      `;
+    } else if (['mp4', 'mov', 'webm', 'avi', 'mkv'].includes(ext) || type === 'video') {
+      bodyHtml = `
+        <div style="text-align:center;background:#000;border-radius:8px;overflow:hidden">
+          <video controls autoplay src="${src}" style="width:100%;max-height:70vh"></video>
+        </div>
+      `;
+    } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext) || type === 'audio') {
+      bodyHtml = `
+        <div class="card" style="padding:var(--space-xl);text-align:center">
+          <div style="font-size:3rem;margin-bottom:12px">🎵</div>
+          <h3>${name}</h3>
+          <audio controls autoplay src="${src}" style="width:100%;margin-top:16px"></audio>
+        </div>
+      `;
+    } else if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'].includes(ext) || type === 'image') {
+      bodyHtml = `
+        <div style="text-align:center;background:#000;border-radius:8px;padding:10px">
+          <img src="${src}" alt="${name}" style="max-width:100%;max-height:70vh;object-fit:contain">
+        </div>
+      `;
+    } else if (['xls', 'xlsx', 'csv'].includes(ext) || type === 'excel') {
+      const rows = fileItem.rows || (fileItem.content ? fileItem.content.split('\n').map(r => r.split(/[,;	]/)) : []);
+      bodyHtml = `
+        <div class="table-container" style="max-height:65vh;overflow:auto">
+          <table class="data-table">
+            <thead>
+              <tr>${(rows[0] || ['Col 1', 'Col 2', 'Col 3']).map(h => `<th>${h}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+              ${rows.slice(1).map(row => `<tr>${row.map(cell => `<td>${cell || ''}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else {
+      // Document text / Fountain / Script / Words
+      bodyHtml = `
+        <div class="card" style="max-height:65vh;overflow:auto;font-family:Courier, monospace;white-space:pre-wrap;line-height:1.6;background:#161826;color:#e1e4fa;padding:var(--space-lg)">
+          ${fileItem.content || 'Sin vista previa textual disponible.'}
+        </div>
+      `;
+    }
+
+    this.showModal(`
+      <div class="modal-header">
+        <div>
+          <h2>👁️ Visor CinePrep: <span class="text-gold">${name}</span></h2>
+          <span class="tag tag-neutral" style="font-size:0.75rem;text-transform:uppercase">${ext.toUpperCase()}</span>
+        </div>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        ${bodyHtml}
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close">Cerrar Visor</button>
+        ${['pdf', 'txt', 'fountain', 'md', 'docx', 'doc', 'csv', 'xlsx'].includes(ext) ? `
+          <button class="btn btn-primary" id="btnAutoParseInModal">⚡ Desglosar en Módulos de la App</button>
+        ` : ''}
+      </div>
+    `, 'xl');
+
+    const btnParse = document.getElementById('btnAutoParseInModal');
+    if (btnParse) {
+      btnParse.addEventListener('click', () => {
+        this.closeModal();
+        this.autoParseProjectFile(fileItem);
+      });
+    }
+  },
+
+  /* Smart Content Auto-Parser (Extracts Logline, Tagline, Synopsis, Scenes & Budget) */
+  autoParseProjectFile(fileItem) {
+    const proj = Storage.getProject();
+    if (!proj) return;
+
+    let text = fileItem.content || '';
+    if (fileItem.rows && fileItem.rows.length > 0) {
+      // Handle Excel budget
+      if (PresupuestoModule) {
+        PresupuestoModule.importExcelOrCSV(fileItem);
+        return;
+      }
+    }
+
+    // Extract text from raw base64 or PDF text strings if available
+    if (text.startsWith('data:application/pdf') || text.startsWith('data:')) {
+      text = unescape(encodeURIComponent(atob(text.split(',')[1] || ''))).replace(/[^ -~\s
+A-Za-z0-9áéíóúÁÉÍÓÚñÑ]/g, ' ');
+    }
+
+    if (!proj.guion) proj.guion = {};
+
+    // 1. Set full script text
+    proj.guion.guionTexto = text;
+
+    // 2. Extract or Synthesize Logline
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    const firstPara = lines.slice(0, 15).join(' ');
+
+    if (!proj.guion.logline || proj.guion.logline.length < 10) {
+      proj.guion.logline = firstPara.slice(0, 160) + '...';
+    }
+
+    // 3. Extract Tagline
+    if (!proj.guion.tagline) {
+      proj.guion.tagline = lines[0] ? lines[0].slice(0, 80) : 'Una producción cinematográfica impactante.';
+    }
+
+    // 4. Extract Synopsis
+    if (!proj.guion.sinopsisCorta) {
+      proj.guion.sinopsisCorta = firstPara.slice(0, 300) + '.';
+    }
+
+    // 5. Extract Scenes for Escaleta & Scene Cards
+    const sceneRegex = /(?:INT\.|EXT\.|INT\/EXT\.)\s+([^
+\-]+)(?:\s*-\s*([^
+]+))?/gi;
+    let match;
+    const scenes = [];
+    const tarjetas = [];
+
+    while ((match = sceneRegex.exec(text)) !== null) {
+      const loc = match[1] ? match[1].trim() : 'LOCACIÓN';
+      const time = match[2] ? match[2].trim() : 'DÍA';
+      const num = scenes.length + 1;
+
+      scenes.push({
+        numero: num,
+        encabezado: match[0],
+        locacion: loc,
+        tiempo: time,
+        resumen: `Escena ${num} en ${loc}`
+      });
+
+      tarjetas.push({
+        numero: num,
+        titulo: `Escena ${num}: ${loc}`,
+        interiorExterior: match[0].startsWith('INT') ? 'INT' : 'EXT',
+        diaNoche: time,
+        personajes: 'Por definir',
+        descripcion: `Desglose automático de escena ${num}`
+      });
+    }
+
+    if (scenes.length > 0) {
+      proj.guion.escaleta = scenes;
+      proj.guion.tarjetas = tarjetas;
+    }
+
+    Storage.saveProject(proj);
+    this.toast(`¡Guion y derivados desglosados! Se detectaron ${scenes.length} escenas, logline y sinopsis.`, 'success');
+    this.navigate('guion');
   },
 
   /* Render Media Element Component */
