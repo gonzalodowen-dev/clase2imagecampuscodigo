@@ -2,21 +2,13 @@
 const App = {
   activeModule: 'dashboard',
   modules: {},
-  deferredPrompt: null,
 
   init() {
     this.setupNavigation();
     this.setupMobileMenu();
     this.setupImportExport();
-    this.setupPwa();
     this.checkUrlInvites();
-
-    const activeId = Storage.getActiveProjectId();
-    if (activeId && Storage.getProject(activeId)) {
-      this.navigate('dashboard');
-    } else {
-      this.navigate('dashboard');
-    }
+    this.navigate('dashboard');
   },
 
   registerModule(name, moduleObj) {
@@ -25,10 +17,10 @@ const App = {
 
   setupNavigation() {
     document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', () => {
+      item.onclick = (e) => {
         const moduleName = item.dataset.module;
         if (moduleName) this.navigate(moduleName);
-      });
+      };
     });
   },
 
@@ -38,72 +30,15 @@ const App = {
     const overlay = document.getElementById('sidebarOverlay');
 
     if (btn && sidebar && overlay) {
-      btn.addEventListener('click', () => {
+      btn.onclick = () => {
         sidebar.classList.toggle('open');
         overlay.classList.toggle('active');
-      });
-      overlay.addEventListener('click', () => {
+      };
+      overlay.onclick = () => {
         sidebar.classList.remove('open');
         overlay.classList.remove('active');
-      });
+      };
     }
-  },
-
-  setupPwa() {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').then(reg => {
-          console.log('CinePrep Service Worker registrado:', reg.scope);
-        }).catch(err => {});
-      });
-    }
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      this.deferredPrompt = e;
-      const btnSidebar = document.getElementById('btnInstallPwaSidebar');
-      const btnMobile = document.getElementById('btnInstallPwaMobile');
-      if (btnSidebar) btnSidebar.style.display = 'inline-flex';
-      if (btnMobile) btnMobile.style.display = 'inline-flex';
-    });
-
-    const btnSidebar = document.getElementById('btnInstallPwaSidebar');
-    const btnMobile = document.getElementById('btnInstallPwaMobile');
-    if (btnSidebar) btnSidebar.addEventListener('click', () => this.showInstallPwaModal());
-    if (btnMobile) btnMobile.addEventListener('click', () => this.showInstallPwaModal());
-  },
-
-  showInstallPwaModal() {
-    if (this.deferredPrompt) {
-      this.deferredPrompt.prompt();
-      this.deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          this.toast('¡CinePrep instalada como aplicación nativa!', 'success');
-        }
-        this.deferredPrompt = null;
-      });
-      return;
-    }
-
-    this.showModal(`
-      <div class="modal-header"><h2>📲 Instalar CinePrep en tu Dispositivo</h2><button class="modal-close">&times;</button></div>
-      <div class="modal-body" style="font-size:0.95rem;line-height:1.6">
-        <p class="mb-md">CinePrep se puede instalar como aplicación nativa en <strong>Computadoras (Windows / Mac)</strong>, <strong>Celulares (Android / iPhone)</strong> y <strong>Tablets</strong> para funcionar 100% offline sin internet.</p>
-        <div class="card mb-sm" style="background:var(--bg-elevated);border:1px solid var(--border-strong);">
-          <h4 style="color:var(--accent-gold);margin-bottom:4px">💻 En Computadoras (Chrome / Edge / Brave)</h4>
-          <p style="font-size:0.85rem;color:var(--text-secondary)">Hacé clic en el ícono de instalación <strong>⊕ (Instalar CinePrep)</strong> en la barra de direcciones de tu navegador.</p>
-        </div>
-        <div class="card mb-sm" style="background:var(--bg-elevated);border:1px solid var(--border-strong);">
-          <h4 style="color:var(--accent-gold);margin-bottom:4px">📱 En Celulares Android</h4>
-          <p style="font-size:0.85rem;color:var(--text-secondary)">Abrí el menú de 3 puntos (⋮) en Chrome y seleccioná <strong>"Agregar a la pantalla principal"</strong>.</p>
-        </div>
-        <div class="card" style="background:var(--bg-elevated);border:1px solid var(--border-strong);">
-          <h4 style="color:var(--accent-gold);margin-bottom:4px">🍎 En iPhone / iPad (Safari)</h4>
-          <p style="font-size:0.85rem;color:var(--text-secondary)">Toca el botón <strong>Compartir (🗍)</strong> en Safari y selecciona <strong>"Agregar a inicio"</strong>.</p>
-        </div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-primary modal-close">Entendido</button></div>
-    `);
   },
 
   setupImportExport() {
@@ -114,7 +49,7 @@ const App = {
     const btnInvite = document.getElementById('btnInviteCollabSidebar');
 
     if (btnExp) {
-      btnExp.addEventListener('click', () => {
+      btnExp.onclick = () => {
         const project = Storage.getProject();
         if (!project) { this.toast('No hay ningún proyecto activo para exportar', 'warning'); return; }
         const jsonStr = JSON.stringify(project, null, 2);
@@ -126,12 +61,12 @@ const App = {
         a.click();
         URL.revokeObjectURL(url);
         this.toast('Proyecto exportado en JSON', 'success');
-      });
+      };
     }
 
     if (btnImp && fileImp) {
-      btnImp.addEventListener('click', () => fileImp.click());
-      fileImp.addEventListener('change', (e) => {
+      btnImp.onclick = () => fileImp.click();
+      fileImp.onchange = (e) => {
         const file = e.target.files[0];
         if (file) {
           const reader = new FileReader();
@@ -150,18 +85,18 @@ const App = {
           reader.readAsText(file);
           e.target.value = '';
         }
-      });
+      };
     }
 
     if (btnPDF) {
-      btnPDF.addEventListener('click', () => this.exportProjectPDF());
+      btnPDF.onclick = () => this.exportProjectPDF();
     }
 
     if (btnInvite) {
-      btnInvite.addEventListener('click', () => {
+      btnInvite.onclick = () => {
         if (!this.requireProject()) return;
         ColaboradoresModule.showInviteLinkModal();
-      });
+      };
     }
   },
 
@@ -318,7 +253,7 @@ const App = {
 
     let bodyHtml = '';
 
-    if (ext === 'pdf' || (type === 'pdf')) {
+    if (ext === 'pdf' || type === 'pdf') {
       bodyHtml = `
         <div style="width:100%;height:70vh;background:#1a1c29;border-radius:8px;overflow:hidden">
           <iframe src="${src}" style="width:100%;height:100%;border:none;"></iframe>
@@ -359,7 +294,6 @@ const App = {
         </div>
       `;
     } else {
-      // Document text / Fountain / Script / Words
       bodyHtml = `
         <div class="card" style="max-height:65vh;overflow:auto;font-family:Courier, monospace;white-space:pre-wrap;line-height:1.6;background:#161826;color:#e1e4fa;padding:var(--space-lg)">
           ${fileItem.content || 'Sin vista previa textual disponible.'}
@@ -388,10 +322,10 @@ const App = {
 
     const btnParse = document.getElementById('btnAutoParseInModal');
     if (btnParse) {
-      btnParse.addEventListener('click', () => {
+      btnParse.onclick = () => {
         this.closeModal();
         this.autoParseProjectFile(fileItem);
-      });
+      };
     }
   },
 
@@ -402,25 +336,15 @@ const App = {
 
     let text = fileItem.content || '';
     if (fileItem.rows && fileItem.rows.length > 0) {
-      // Handle Excel budget
-      if (PresupuestoModule) {
+      if (typeof PresupuestoModule !== 'undefined') {
         PresupuestoModule.importExcelOrCSV(fileItem);
         return;
       }
     }
 
-    // Extract text from raw base64 or PDF text strings if available
-    if (text.startsWith('data:application/pdf') || text.startsWith('data:')) {
-      text = unescape(encodeURIComponent(atob(text.split(',')[1] || ''))).replace(/[^ -~\s
-A-Za-z0-9áéíóúÁÉÍÓÚñÑ]/g, ' ');
-    }
-
     if (!proj.guion) proj.guion = {};
-
-    // 1. Set full script text
     proj.guion.guionTexto = text;
 
-    // 2. Extract or Synthesize Logline
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
     const firstPara = lines.slice(0, 15).join(' ');
 
@@ -428,17 +352,14 @@ A-Za-z0-9áéíóúÁÉÍÓÚñÑ]/g, ' ');
       proj.guion.logline = firstPara.slice(0, 160) + '...';
     }
 
-    // 3. Extract Tagline
     if (!proj.guion.tagline) {
       proj.guion.tagline = lines[0] ? lines[0].slice(0, 80) : 'Una producción cinematográfica impactante.';
     }
 
-    // 4. Extract Synopsis
     if (!proj.guion.sinopsisCorta) {
       proj.guion.sinopsisCorta = firstPara.slice(0, 300) + '.';
     }
 
-    // 5. Extract Scenes for Escaleta & Scene Cards
     const sceneRegex = /(?:INT\.|EXT\.|INT\/EXT\.)\s+([^
 \-]+)(?:\s*-\s*([^
 ]+))?/gi;
