@@ -1,12 +1,14 @@
-/* CinePrep - Core Application Logic, Excel Engine, PDF Dossier Export & Router */
+/* CinePrep - Core Application Logic, PWA Installer, Excel Engine & Router */
 const App = {
   activeModule: 'dashboard',
   modules: {},
+  deferredPrompt: null,
 
   init() {
     this.setupNavigation();
     this.setupMobileMenu();
     this.setupImportExport();
+    this.setupPwa();
     this.checkUrlInvites();
 
     const activeId = Storage.getActiveProjectId();
@@ -45,6 +47,73 @@ const App = {
         overlay.classList.remove('active');
       });
     }
+  },
+
+  setupPwa() {
+    // Register Service Worker for Offline & App Installation
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then(reg => {
+          console.log('CinePrep Service Worker registrado con éxito:', reg.scope);
+        }).catch(err => {
+          console.log('Error registrando Service Worker:', err);
+        });
+      });
+    }
+
+    // Capture install prompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredPrompt = e;
+      const btnSidebar = document.getElementById('btnInstallPwaSidebar');
+      const btnMobile = document.getElementById('btnInstallPwaMobile');
+      if (btnSidebar) btnSidebar.style.display = 'inline-flex';
+      if (btnMobile) btnMobile.style.display = 'inline-flex';
+    });
+
+    const btnSidebar = document.getElementById('btnInstallPwaSidebar');
+    const btnMobile = document.getElementById('btnInstallPwaMobile');
+    if (btnSidebar) btnSidebar.addEventListener('click', () => this.showInstallPwaModal());
+    if (btnMobile) btnMobile.addEventListener('click', () => this.showInstallPwaModal());
+  },
+
+  showInstallPwaModal() {
+    if (this.deferredPrompt) {
+      this.deferredPrompt.prompt();
+      this.deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          this.toast('¡CinePrep instalada como aplicación nativa!', 'success');
+        }
+        this.deferredPrompt = null;
+      });
+      return;
+    }
+
+    // Modal with instructions for all platforms
+    this.showModal(`
+      <div class="modal-header"><h2>📲 Instalar CinePrep en tu Dispositivo</h2><button class="modal-close">&times;</button></div>
+      <div class="modal-body" style="font-size:0.95rem;line-height:1.6">
+        <p class="mb-md">CinePrep se puede instalar como aplicación nativa descargable en <strong>Computadoras (Windows / Mac)</strong>, <strong>Celulares (Android / iPhone)</strong> y <strong>Tablets (iPad)</strong> para funcionar 100% offline sin necesidad de internet.</p>
+        
+        <div class="card mb-sm" style="background:var(--bg-elevated);border:1px solid var(--border-strong);">
+          <h4 style="color:var(--accent-gold);margin-bottom:4px">💻 En Computadoras (Chrome / Edge / Brave)</h4>
+          <p style="font-size:0.85rem;color:var(--text-secondary)">Hacé clic en el ícono de instalación <strong>⊕ (Instalar CinePrep)</strong> ubicado en la parte derecha de la barra de direcciones de tu navegador, o hacé clic en los 3 puntos del menú y selecciona <em>"Instalar CinePrep..."</em>.</p>
+        </div>
+
+        <div class="card mb-sm" style="background:var(--bg-elevated);border:1px solid var(--border-strong);">
+          <h4 style="color:var(--accent-gold);margin-bottom:4px">📱 En Celulares y Tablets Android</h4>
+          <p style="font-size:0.85rem;color:var(--text-secondary)">Abrí el menú de 3 puntos (⋮) arriba a la derecha en Chrome y seleccioná <strong>"Agregar a la pantalla principal"</strong> o <strong>"Instalar aplicación"</strong>.</p>
+        </div>
+
+        <div class="card" style="background:var(--bg-elevated);border:1px solid var(--border-strong);">
+          <h4 style="color:var(--accent-gold);margin-bottom:4px">🍎 En iPhone / iPad (Safari)</h4>
+          <p style="font-size:0.85rem;color:var(--text-secondary)">Toca el botón <strong>Compartir (🗍)</strong> en la barra inferior de Safari y selecciona <strong>"Agregar a inicio"</strong> (Add to Home Screen).</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary modal-close">Entendido</button>
+      </div>
+    `);
   },
 
   setupImportExport() {
@@ -210,7 +279,6 @@ const App = {
     const name = file.name;
     const ext = name.split('.').pop().toLowerCase();
 
-    // Check if Excel file (.xlsx, .xls, .csv)
     if (['xlsx', 'xls', 'csv', 'tsv'].includes(ext)) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -220,8 +288,6 @@ const App = {
             const workbook = XLSX.read(data, { type: 'array' });
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
             const jsonRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-            // Convert matrix to text CSV for existing parsers
             const csvContent = jsonRows.map(row => row.join(',')).join('\n');
             callback({ name, ext, type: 'excel', rows: jsonRows, content: csvContent, dataUrl: csvContent });
             return;
@@ -230,7 +296,6 @@ const App = {
           console.warn('SheetJS error, falling back to text reader:', err);
         }
 
-        // Fallback text reader
         const textReader = new FileReader();
         textReader.onload = (evt) => callback({ name, ext, type: 'text', content: evt.target.result, dataUrl: evt.target.result });
         textReader.readAsText(file);
@@ -291,7 +356,6 @@ const App = {
 
     this.toast('Generando Dossier PDF completo...', 'info');
 
-    // Build Share Link Payload
     const payload = { id: project.id, name: project.name, director: project.director };
     const inviteCode = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     const shareUrl = `${window.location.origin}${window.location.pathname}?invite=${inviteCode}`;
@@ -318,14 +382,12 @@ const App = {
           </div>
         </div>
 
-        <!-- Share Link Box -->
         <div style="background:#fff9e6;border:2px dashed #d4a853;padding:16px;border-radius:8px;margin-bottom:30px;">
           <h4 style="margin:0 0 6px 0;color:#8a6d1b;">🔗 Enlace de Colaboración e Importación Directa</h4>
           <p style="margin:0 0 6px 0;font-size:12px;color:#555;">Escanea o copia este enlace para abrir y colaborar en este mismo proyecto dentro de CinePrep:</p>
           <div style="font-family:monospace;font-size:11px;word-break:break-all;background:#fff;padding:8px;border:1px solid #e0d0a0;border-radius:4px;color:#333;">${shareUrl}</div>
         </div>
 
-        <!-- Guion Summary -->
         <div style="margin-bottom:30px;">
           <h3 style="border-bottom:2px solid #ddd;padding-bottom:6px;color:#222;">📝 Guión & Desarrollo</h3>
           <p><strong>Logline:</strong> ${project.guion?.logline || 'Sin logline.'}</p>
@@ -333,7 +395,6 @@ const App = {
           <p><strong>Sinopsis Corta:</strong> ${project.guion?.sinopsisCorta || 'Sin sinopsis.'}</p>
         </div>
 
-        <!-- Presupuesto Summary -->
         <div style="margin-bottom:30px;">
           <h3 style="border-bottom:2px solid #ddd;padding-bottom:6px;color:#222;">💰 Resumen de Presupuesto (${project.presupuesto?.moneda || 'ARS'})</h3>
           <table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;">
@@ -354,7 +415,6 @@ const App = {
           </table>
         </div>
 
-        <!-- Equipo & Contactos -->
         <div style="margin-bottom:30px;">
           <h3 style="border-bottom:2px solid #ddd;padding-bottom:6px;color:#222;">📞 Equipo & Colaboradores (${(project.contactos || []).length})</h3>
           <ul style="padding-left:20px;font-size:13px;">
@@ -383,7 +443,6 @@ const App = {
         this.toast('¡Dossier PDF descargado con éxito!', 'success');
       });
     } else {
-      // Fallback print window
       const win = window.open('', '_blank');
       win.document.write(pdfHtml);
       win.document.close();
