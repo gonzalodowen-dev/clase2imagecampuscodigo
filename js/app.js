@@ -1,4 +1,4 @@
-/* CinePrep - Core Application Logic & Router */
+/* CinePrep - Core Application Logic & Bulletproof Navigation Engine */
 const App = {
   activeModule: 'dashboard',
   modules: {},
@@ -16,13 +16,17 @@ const App = {
   },
 
   setupNavigation() {
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.onclick = (e) => {
-        e.preventDefault();
-        const moduleName = item.dataset.module;
-        if (moduleName) this.navigate(moduleName);
-      };
-    });
+    const bindNav = () => {
+      document.querySelectorAll('[data-module]').forEach(item => {
+        item.onclick = (e) => {
+          e.preventDefault();
+          const moduleName = item.dataset.module;
+          if (moduleName) this.navigate(moduleName);
+        };
+      });
+    };
+    bindNav();
+    setTimeout(bindNav, 500);
   },
 
   setupMobileMenu() {
@@ -31,11 +35,13 @@ const App = {
     const overlay = document.getElementById('sidebarOverlay');
 
     if (btn && sidebar && overlay) {
-      btn.onclick = () => {
+      btn.onclick = (e) => {
+        e.preventDefault();
         sidebar.classList.toggle('open');
         overlay.classList.toggle('active');
       };
-      overlay.onclick = () => {
+      overlay.onclick = (e) => {
+        e.preventDefault();
         sidebar.classList.remove('open');
         overlay.classList.remove('active');
       };
@@ -58,7 +64,7 @@ const App = {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `cineprep_${project.name.toLowerCase().replace(/\s+/g, '_')}.json`;
+        a.download = `cineprep_${(project.name || 'proyecto').toLowerCase().replace(/\s+/g, '_')}.json`;
         a.click();
         URL.revokeObjectURL(url);
         this.toast('Proyecto exportado en JSON', 'success');
@@ -116,10 +122,13 @@ const App = {
   },
 
   navigate(moduleName) {
-    if (!this.modules[moduleName]) return;
+    if (!this.modules[moduleName]) {
+      console.warn(`Modulo "${moduleName}" no registrado.`);
+      return;
+    }
 
     this.activeModule = moduleName;
-    document.querySelectorAll('.nav-item').forEach(item => {
+    document.querySelectorAll('[data-module]').forEach(item => {
       item.classList.toggle('active', item.dataset.module === moduleName);
     });
 
@@ -143,8 +152,7 @@ const App = {
   requireProject() {
     const project = Storage.getProject();
     if (!project) {
-      this.toast('Abre o crea un proyecto para ingresar a este módulo', 'info');
-      this.navigate('dashboard');
+      this.toast('Crea o selecciona un proyecto para acceder', 'info');
       return false;
     }
     return true;
@@ -508,7 +516,7 @@ const App = {
 
     const opt = {
       margin: 10,
-      filename: `dossier_${project.name.toLowerCase().replace(/\s+/g, '_')}.pdf`,
+      filename: `dossier_${(project.name || 'proyecto').toLowerCase().replace(/\s+/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
