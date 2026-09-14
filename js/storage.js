@@ -115,6 +115,11 @@ const Storage = {
     return proj;
   },
 
+  
+  getActiveProject(id) {
+    return this.getProject(id);
+  },
+
   getProject(id) {
     let targetId = id || this.getActiveProjectId();
     let list = this.getProjectsList();
