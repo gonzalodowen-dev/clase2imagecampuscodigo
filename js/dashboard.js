@@ -206,6 +206,11 @@ const DashboardModule = {
     }
 
     // Active workspace buttons
+    const btnNewHeader = document.getElementById('btnHeaderNewProject');
+    if (btnNewHeader) {
+      btnNewHeader.addEventListener('click', () => this.showProjectForm());
+    }
+
     const btnSwitch = document.getElementById('btnSwitchProject');
     if (btnSwitch) {
       btnSwitch.addEventListener('click', () => {

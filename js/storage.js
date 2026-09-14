@@ -122,6 +122,10 @@ const Storage = {
     let targetId = id || this.getActiveProjectId();
     let list = this.getProjectsList();
 
+    if (targetId === 'SELECT') {
+      return null;
+    }
+
     if (!targetId && list.length > 0) {
       targetId = list[0].id;
       this.setActiveProjectId(targetId);
@@ -213,7 +217,7 @@ const Storage = {
   },
 
   closeActiveProject() {
-    this.setActiveProjectId(null);
+    this.setActiveProjectId('SELECT');
   }
 };
 

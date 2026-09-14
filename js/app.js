@@ -121,6 +121,15 @@ const App = {
     }
 
     // Join Project by Code Modal
+    const btnSidebarNew = document.getElementById('btnSidebarNewProject');
+    if (btnSidebarNew) {
+      btnSidebarNew.addEventListener('click', () => {
+        if (typeof DashboardModule !== 'undefined') {
+          DashboardModule.showProjectForm();
+        }
+      });
+    }
+
     const btnJoin = document.getElementById('btnJoinProjectCode');
     const modalJoin = document.getElementById('modalJoinProjectCode');
     const btnCloseJoin = document.getElementById('btnCloseJoinCode');
