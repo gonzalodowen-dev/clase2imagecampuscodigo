@@ -114,6 +114,7 @@
   <!-- Output Header Bar -->
   <header class="output-header">
     <div class="output-title">
+        <button id="btnThemeToggleOutput" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.9rem;font-weight:bold;margin-right:12px;">☀️ Modo Claro / 🌙 Modo Oscuro</button>
       <span>🎬</span> <span id="outProjName">CinePrep Live Output</span>
       <span class="tag tag-gold" id="outProjFormato">Cortometraje</span>
     </div>
@@ -149,6 +150,22 @@
 
     // Initialize Socket.IO connection
     const socket = typeof io !== 'undefined' ? io() : null;
+
+    // Theme handler for output.html
+    function initOutputTheme() {
+      const saved = localStorage.getItem('cineprep_theme') || 'dark';
+      document.body.classList.toggle('theme-dark', saved === 'dark');
+      const btn = document.getElementById('btnThemeToggleOutput');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const isDark = document.body.classList.contains('theme-dark');
+          const newTheme = isDark ? 'light' : 'dark';
+          document.body.classList.toggle('theme-dark', !isDark);
+          localStorage.setItem('cineprep_theme', newTheme);
+        });
+      }
+    }
+    initOutputTheme();
 
     if (socket) {
       socket.on('connect', () => {

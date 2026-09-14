@@ -29,12 +29,14 @@ const App = {
     }
   },
 
-  applyTheme(theme) {
+    applyTheme(theme) {
     const isDark = theme === 'dark';
     document.body.classList.toggle('theme-dark', isDark);
     try { localStorage.setItem(this.THEME_KEY, theme); } catch (e) {}
     const icon = document.getElementById('themeToggleIcon');
-    if (icon) icon.textContent = isDark ? '📖' : '🌙';
+    const label = document.getElementById('themeToggleText');
+    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+    if (label) label.textContent = isDark ? 'Modo Claro' : 'Modo Oscuro';
   },
 
   toggleTheme() {

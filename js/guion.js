@@ -172,7 +172,7 @@ const GuionModule = {
                     <span class="tag tag-gold">Escena ${t.numero || i + 1}</span>
                     <span class="tag tag-neutral">${t.interiorExterior || 'INT'} / ${t.diaNoche || 'DÍA'}</span>
                   </div>
-                  <h4 style="color:#fff;margin:6px 0">${t.titulo || 'Sin título'}</h4>
+                  <h4 style="color:var(--text-primary);margin:6px 0">${t.titulo || 'Sin título'}</h4>
                   <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:8px">${t.descripcion || ''}</p>
                   <div style="font-size:0.78rem;color:var(--accent-gold-light)">👥 Personajes: ${t.personajes || 'Sin definir'}</div>
                   <div class="divider" style="margin:10px 0"></div>

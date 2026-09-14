@@ -282,3 +282,37 @@
   transform: translateY(-2px);
   box-shadow: 3px 5px 0 rgba(29,53,87,0.15);
 }
+
+
+/* ============================================
+   DARK THEME DASHBOARD CONTRAST OVERRIDES
+   ============================================ */
+body.theme-dark .welcome-card {
+  background: var(--bg-surface);
+  border-color: var(--accent-gold-light);
+  color: var(--text-primary);
+  box-shadow: 6px 10px 0 rgba(0, 0, 0, 0.5);
+  background-image: repeating-linear-gradient(0deg, transparent 0 32px, rgba(240,242,250,0.03) 32px 33px);
+}
+
+body.theme-dark .welcome-card h1, 
+body.theme-dark .welcome-card p {
+  color: var(--text-primary);
+}
+
+body.theme-dark .dashboard-hero {
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  box-shadow: 4px 7px 0 rgba(0, 0, 0, 0.4);
+}
+
+body.theme-dark .stat-card {
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+body.theme-dark .stat-value {
+  color: var(--accent-gold-light);
+}

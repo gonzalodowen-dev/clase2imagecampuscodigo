@@ -146,10 +146,10 @@ const DashboardModule = {
           </div>
         </div>
 
-        <h3 style="margin-bottom: var(--space-md); color: #ffffff;">📊 Progreso de Módulos</h3>
+        <h3 style="margin-bottom: var(--space-md); color: var(--text-primary);">📊 Progreso de Módulos</h3>
         <div class="progress-overview">${progressCards}</div>
 
-        <h3 style="margin-bottom: var(--space-md); color: #ffffff;">⚡ Acciones Rápidas</h3>
+        <h3 style="margin-bottom: var(--space-md); color: var(--text-primary);">⚡ Acciones Rápidas</h3>
         <div class="quick-actions">
           <div class="quick-action-card" data-nav="guion">
             <div class="qa-icon">📝</div>

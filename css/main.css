@@ -87,15 +87,15 @@
    DARK = "NIGHT HOMEWORK" LAPTOP LIGHT
    ============================================ */
 body.theme-dark {
-  --bg-deepest: #1b1d2a;
-  --bg-base: #23263a;
-  --bg-surface: #2c3048;
-  --bg-elevated: #353a57;
-  --bg-overlay: #3d4366;
-  --bg-hover: #444b70;
+  --bg-deepest: #131520;
+  --bg-base: #1b1e2e;
+  --bg-surface: #23273c;
+  --bg-elevated: #2a2f48;
+  --bg-overlay: #323856;
+  --bg-hover: #3b4266;
 
-  --ink-blue: #e8ecf8;
-  --ink-red: #ff6b6b;
+  --ink-blue: #f0f2fa;
+  --ink-red: #ff7b7b;
   --pencil-gray: #a8adc4;
 
   --text-primary: #f0f2fa;
@@ -104,18 +104,46 @@ body.theme-dark {
   --text-accent: var(--accent-gold-light);
 
   --border-subtle: rgba(240, 242, 250, 0.08);
-  --border-default: rgba(240, 242, 250, 0.14);
-  --border-strong: rgba(240, 242, 250, 0.25);
+  --border-default: rgba(240, 242, 250, 0.16);
+  --border-strong: rgba(240, 242, 250, 0.28);
   --border-accent: rgba(255, 171, 64, 0.45);
 
-  --glass-bg: rgba(44, 48, 72, 0.88);
-  --glass-border: rgba(240, 242, 250, 0.12);
+  --glass-bg: rgba(35, 39, 60, 0.92);
+  --glass-border: rgba(240, 242, 250, 0.14);
 
   --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.7);
   --shadow-glow: 0 0 28px rgba(255, 171, 64, 0.22);
 }
+
+body.theme-dark h1, body.theme-dark h2, body.theme-dark h3, body.theme-dark h4 {
+  color: var(--text-primary);
+}
+
+body.theme-dark a {
+  color: #82aaff;
+  text-decoration-color: rgba(130, 170, 255, 0.4);
+}
+
+body.theme-dark .page-header {
+  background: linear-gradient(180deg, rgba(35, 39, 60, 0.96) 0%, rgba(27, 30, 46, 0.92) 100%);
+  border-bottom: 2px solid var(--border-default);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.theme-dark .page-header h1 {
+  color: var(--text-primary);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+body.theme-dark .mobile-menu-btn {
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4);
+}
+
 
 /* ============================================
    GRID / SQUARED NOTEBOOK PAPER BACKGROUND

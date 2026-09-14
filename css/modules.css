@@ -490,3 +490,49 @@
   opacity: 0.8;
   pointer-events: none;
 }
+
+
+/* ============================================
+   DARK THEME MODULE CONTRAST OVERRIDES
+   ============================================ */
+body.theme-dark .screenplay-editor {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  box-shadow: 4px 7px 0 rgba(0, 0, 0, 0.4);
+  background-image: repeating-linear-gradient(0deg, transparent 0 30px, rgba(240,242,250,0.04) 30px 31px);
+}
+
+body.theme-dark .screenplay-editor:focus {
+  background: var(--bg-surface);
+  border-color: var(--accent-gold-light);
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.25);
+}
+
+body.theme-dark .scene-card {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  box-shadow: 3px 5px 0 rgba(0, 0, 0, 0.4);
+}
+
+body.theme-dark .scene-card .scene-title {
+  color: var(--text-primary);
+  border-bottom-color: var(--border-default);
+}
+
+body.theme-dark .scene-card .scene-desc {
+  color: var(--text-secondary);
+}
+
+body.theme-dark .scene-card .scene-number {
+  background: #383120;
+  color: #ffe7a8;
+  border-color: var(--accent-gold-light);
+}
+
+body.theme-dark .tech-script-table input, 
+body.theme-dark .tech-script-table select {
+  color: var(--text-primary);
+  border-bottom-color: var(--border-strong);
+}
