@@ -231,11 +231,11 @@
           </div>
           <div class="output-card">
             <span class="text-muted text-xs">PRODUCTORA</span>
-            <h2 style="color:#ffffff;margin-top:4px">${p.productora || 'N/I'}</h2>
+            <h2 class="output-text-primary" style="margin-top:4px">${p.productora || 'N/I'}</h2>
           </div>
           <div class="output-card">
             <span class="text-muted text-xs">EQUIPO / CREW</span>
-            <h2 style="color:#ffffff;margin-top:4px">${contactos.length} Integrantes</h2>
+            <h2 class="output-text-primary" style="margin-top:4px">${contactos.length} Integrantes</h2>
           </div>
         </div>
 
@@ -244,7 +244,7 @@
           ${(rod.dias || []).length === 0 ? '<p class="text-muted">Sin días de rodaje agendados aún.</p>' : `
             <div class="grid-2">
               ${rod.dias.map((d, i) => `
-                <div class="shooting-day card" style="background:#10121d;border:1px solid var(--border-strong)">
+                <div class="shooting-day card" class="output-card-item">
                   <div class="day-title" style="color:var(--accent-gold);font-size:1.2rem">🎬 DÍA ${d.diaNumero || i + 1}</div>
                   <div class="text-muted text-xs mt-xs">📍 ${d.locacion || 'Locación N/I'} | ⏰ Citación: ${d.callTime || '08:00'}</div>
                   <div class="mt-md font-bold text-xs" style="text-transform:uppercase">Escenas a Filmase: ${(d.escenas || []).length}</div>
@@ -350,7 +350,7 @@
           <h2 style="margin-bottom:16px">📊 Distribución de Rubros por Departamento</h2>
           <div class="grid-2">
             ${(pres.areas || []).map(a => `
-              <div class="card" style="background:#10121d;border:1px solid var(--border-strong)">
+              <div class="card" class="output-card-item">
                 <h3>${a.nombre}</h3>
                 <div class="text-muted text-xs mt-xs">${(a.items || []).length} rubros cargados</div>
               </div>

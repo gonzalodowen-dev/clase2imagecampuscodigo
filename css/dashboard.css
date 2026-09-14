@@ -316,3 +316,73 @@ body.theme-dark .stat-card {
 body.theme-dark .stat-value {
   color: var(--accent-gold-light);
 }
+
+
+/* ============================================
+   STRICT DARK MODE DASHBOARD CONTRAST OVERRIDES
+   ============================================ */
+body.theme-dark .welcome-card {
+  background: var(--bg-surface) !important;
+  border-color: var(--accent-gold-light) !important;
+  color: var(--text-primary) !important;
+}
+body.theme-dark .welcome-card h1,
+body.theme-dark .welcome-card p {
+  color: var(--text-primary) !important;
+}
+body.theme-dark .dashboard-hero {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+body.theme-dark .dashboard-hero::after {
+  background: linear-gradient(120deg, rgba(35, 39, 60, 0.95) 0%, rgba(35, 39, 60, 0.85) 100%) !important;
+}
+body.theme-dark .dashboard-hero .project-info h2 {
+  color: var(--text-primary) !important;
+}
+body.theme-dark .dashboard-hero .project-meta .meta-item {
+  background: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-strong) !important;
+}
+body.theme-dark .progress-card {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+body.theme-dark .progress-card .pc-name {
+  color: var(--text-primary) !important;
+}
+body.theme-dark .progress-card .pc-status {
+  color: var(--text-muted) !important;
+}
+body.theme-dark .progress-card .pc-count {
+  background: #383120 !important;
+  color: #ffe7a8 !important;
+  border-color: var(--accent-gold-light) !important;
+}
+body.theme-dark .quick-action-card {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+body.theme-dark .quick-action-card:hover {
+  background: var(--bg-elevated) !important;
+  border-color: var(--accent-gold-light) !important;
+}
+body.theme-dark .quick-action-card .qa-title {
+  color: var(--text-primary) !important;
+}
+body.theme-dark .quick-action-card .qa-desc {
+  color: var(--text-muted) !important;
+}
+body.theme-dark .project-card-cover {
+  background: var(--bg-base) !important;
+  border-color: var(--border-strong) !important;
+}
+body.theme-dark .project-cover-empty-btn {
+  background: var(--bg-elevated) !important;
+  color: var(--accent-gold-light) !important;
+  border-color: var(--accent-gold-light) !important;
+}

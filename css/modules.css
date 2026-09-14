@@ -536,3 +536,61 @@ body.theme-dark .tech-script-table select {
   color: var(--text-primary);
   border-bottom-color: var(--border-strong);
 }
+
+
+/* ============================================
+   STRICT DARK MODE MODULE CONTRAST OVERRIDES
+   ============================================ */
+body.theme-dark .scene-card {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+}
+body.theme-dark .scene-card .scene-title {
+  color: var(--text-primary) !important;
+}
+body.theme-dark .scene-card .scene-desc {
+  color: var(--text-secondary) !important;
+}
+body.theme-dark .scene-card .scene-number {
+  background: #383120 !important;
+  color: #ffe7a8 !important;
+  border-color: var(--accent-gold-light) !important;
+}
+
+body.theme-dark .screenplay-editor {
+  background: var(--bg-base) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-strong) !important;
+}
+
+body.theme-dark .guion-item,
+body.theme-dark .guion-derivado-card,
+body.theme-dark .storyboard-frame,
+body.theme-dark .moodboard-item,
+body.theme-dark .casting-card,
+body.theme-dark .catering-card,
+body.theme-dark .traslados-card,
+body.theme-dark .contact-card,
+body.theme-dark .drive-file-card,
+body.theme-dark .drive-storage-card,
+body.theme-dark .plan-card,
+body.theme-dark .colaborador-card {
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-strong) !important;
+}
+
+body.theme-dark .guion-item h3,
+body.theme-dark .guion-derivado-card h3,
+body.theme-dark .storyboard-frame h4,
+body.theme-dark .moodboard-item h4,
+body.theme-dark .casting-card h3,
+body.theme-dark .catering-card h3,
+body.theme-dark .traslados-card h3,
+body.theme-dark .contact-card h3,
+body.theme-dark .drive-file-card h4,
+body.theme-dark .plan-card h3,
+body.theme-dark .colaborador-card h3 {
+  color: var(--text-primary) !important;
+}

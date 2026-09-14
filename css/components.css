@@ -523,3 +523,46 @@ body.theme-dark .tag-warning { background: #463b15; color: #ffeb99; border-color
 body.theme-dark .tag-danger { background: #4a1919; color: #ffadad; border-color: #d62828; }
 body.theme-dark .tag-info { background: #172d47; color: #a6c8ff; border-color: #2a4d77; }
 body.theme-dark .tag-neutral { background: #2a2f48; color: #c9cde0; border-color: var(--border-strong); }
+
+
+/* ============================================
+   STRICT CONTRAST FIXES FOR BUTTONS & BADGES
+   ============================================ */
+.btn-primary {
+  background: repeating-linear-gradient(135deg, #fce38a 0 10px, #f7d070 10px 20px) !important;
+  color: #2b1d00 !important;
+  border-color: #8a6a12 !important;
+  box-shadow: 2px 3px 0 #8a6a12 !important;
+  text-shadow: none !important;
+}
+.btn-primary:hover {
+  color: #000000 !important;
+}
+body.theme-dark .btn-primary {
+  color: #2b1d00 !important;
+}
+
+body.theme-dark .btn-secondary {
+  background: linear-gradient(135deg, #2a3148 0%, #1f2538 100%) !important;
+  color: #f0f2fa !important;
+  border-color: var(--border-strong) !important;
+}
+
+body.theme-dark .btn-danger {
+  background: linear-gradient(135deg, #4a1c1c 0%, #381414 100%) !important;
+  color: #ffadad !important;
+  border-color: #d62828 !important;
+}
+
+.welcome-card::before,
+.modal::before,
+.card-accent::before {
+  color: #2b1d00 !important;
+}
+
+body.theme-dark .welcome-card::before,
+body.theme-dark .modal::before {
+  background: #e9c46a !important;
+  color: #2b1d00 !important;
+  border-color: #8a6a12 !important;
+}
