@@ -1,7 +1,37 @@
-/* CinePrep - Storage Engine con Fallback y Autocreación Segura */
+/* CinePrep - Storage Engine con Sincronización Socket.IO en Tiempo Real */
 const Storage = {
   LIST_KEY: 'cineprep_projects_list',
   ACTIVE_KEY: 'cineprep_active_project_id',
+  socket: typeof io !== 'undefined' ? io() : null,
+
+  initSocket() {
+    if (!this.socket) return;
+
+    this.socket.on('connect', () => {
+      console.log('[CinePrep Socket] Conectado al servidor Node.js');
+    });
+
+    this.socket.on('init-state', (state) => {
+      if (state && state.activeProjectData) {
+        this.saveProjectsList(state.projectsList || []);
+        if (state.activeProjectId) this.setActiveProjectId(state.activeProjectId);
+        localStorage.setItem('cineprep_proj_' + state.activeProjectData.id, JSON.stringify(state.activeProjectData));
+      }
+    });
+
+    this.socket.on('project-changed', (data) => {
+      if (data && data.project) {
+        this.saveProjectsList(data.projectsList || []);
+        if (data.activeProjectId) this.setActiveProjectId(data.activeProjectId);
+        localStorage.setItem('cineprep_proj_' + data.project.id, JSON.stringify(data.project));
+
+        // Trigger UI refresh if App is ready
+        if (typeof App !== 'undefined' && App.activeModule) {
+          App.navigate(App.activeModule);
+        }
+      }
+    });
+  },
 
   getProjectsList() {
     try {
@@ -33,11 +63,21 @@ const Storage = {
     }
   },
 
+  cleanProjectData(proj) {
+    if (!proj) return proj;
+    if (proj.guion && proj.guion.guionTexto) {
+      const txt = proj.guion.guionTexto;
+      if (txt.startsWith('data:') || txt.includes('UEsDB') || txt.includes('wordprocessingml')) {
+        proj.guion.guionTexto = 'Guión importado (texto extraído limpio).';
+      }
+    }
+    return proj;
+  },
+
   getProject(id) {
     let targetId = id || this.getActiveProjectId();
     let list = this.getProjectsList();
 
-    // Auto-recovery if active project ID is missing but list has projects
     if (!targetId && list.length > 0) {
       targetId = list[0].id;
       this.setActiveProjectId(targetId);
@@ -46,13 +86,15 @@ const Storage = {
     if (targetId) {
       try {
         const data = localStorage.getItem('cineprep_proj_' + targetId);
-        if (data) return JSON.parse(data);
+        if (data) {
+          const parsed = JSON.parse(data);
+          return this.cleanProjectData(parsed);
+        }
       } catch (e) {
         console.error('Error al leer el proyecto:', e);
       }
     }
 
-    // Auto-create default initial project if database is completely empty
     if (!targetId && list.length === 0) {
       return this.createProject({
         name: 'Mi Primera Película',
@@ -71,6 +113,7 @@ const Storage = {
     if (!project) return;
     if (!project.id) project.id = 'proj_' + Date.now();
     project.updatedAt = new Date().toISOString();
+    project = this.cleanProjectData(project);
 
     try {
       localStorage.setItem('cineprep_proj_' + project.id, JSON.stringify(project));
@@ -96,6 +139,11 @@ const Storage = {
       }
       this.saveProjectsList(list);
       this.setActiveProjectId(project.id);
+
+      // Emit real-time project update via Socket.IO
+      if (this.socket) {
+        this.socket.emit('save-project', project);
+      }
     } catch (e) {
       console.error('Error al guardar el proyecto:', e);
     }
@@ -165,3 +213,6 @@ const Storage = {
     this.setActiveProjectId(null);
   }
 };
+
+// Initialize socket listeners on load
+Storage.initSocket();

@@ -8,9 +8,9 @@ const DriveModule = {
     return `
       <div class="page-header">
         <h1><span class="header-icon">📁</span> Archivos del Proyecto & Nube (Drive)</h1>
-        <p class="page-subtitle">Guarda y abre todo tipo de archivos (PDF, Word, Excel, MP4, MOV, Fotos) directamente en la app sin descargarlos</p>
+        <p class="page-subtitle">Guarda y abre TODO tipo de archivos (PDF, Word, Excel, MP4, MOV, PSD, AI, ZIP, 3D, Premiere, Final Cut, Subtítulos, Fotos, Audio) directamente en la app sin descargarlos</p>
         <div class="page-header-actions">
-          <button class="btn btn-primary btn-sm" id="btnUploadDriveFile">📥 Cargar Archivos (PDF, DOCS, EXCEL, MP4, MOV)</button>
+          <button class="btn btn-primary btn-sm" id="btnUploadDriveFile">📥 Cargar CUALQUIER Archivo</button>
           <input type="file" id="driveFileInput" accept="*/*" multiple style="display:none">
           <button class="btn btn-secondary btn-sm" onclick="DriveModule.showLinkDriveModal()">🔗 Vincular Enlace Google Drive</button>
         </div>
@@ -40,11 +40,11 @@ const DriveModule = {
         ` : `
           <div class="grid-3">
             ${archivos.map((file, i) => `
-              <div class="card animate-fade-in" style="display:flex;flex-direction:column;justify-space-between;gap:12px;background:var(--bg-elevated);border:1px solid var(--border-strong);">
+              <div class="card animate-fade-in" style="display:flex;flex-direction:column;justify-content:space-between;gap:12px;background:var(--bg-elevated);border:1px solid var(--border-strong);">
                 <div class="flex items-start gap-sm">
                   <span style="font-size:2.2rem">${this.getFileIcon(file.ext, file.type)}</span>
                   <div style="overflow:hidden;flex:1">
-                    <strong style="font-size:0.95rem;color:#ffffff;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${file.name}">${file.name}</strong>
+                    <strong style="font-size:0.95rem;color:var(--text-primary);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${file.name}">${file.name}</strong>
                     <span class="tag tag-neutral mt-xs" style="font-size:0.72rem;text-transform:uppercase">${(file.ext || 'FILE').toUpperCase()}</span>
                     <span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:4px">Agregado: ${App.formatDate((file.fecha || '').split('T')[0])}</span>
                   </div>
@@ -70,12 +70,21 @@ const DriveModule = {
   getFileIcon(ext, type) {
     ext = (ext || '').toLowerCase();
     if (ext === 'pdf') return '📄';
-    if (['doc', 'docx'].includes(ext)) return '📑';
-    if (['xls', 'xlsx', 'csv'].includes(ext)) return '📊';
-    if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext) || type === 'video') return '🎬';
-    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext) || type === 'audio') return '🎵';
-    if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) || type === 'image') return '🖼️';
-    return '📁';
+    if (['doc', 'docx', 'odt', 'rtf'].includes(ext)) return '📑';
+    if (['xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers'].includes(ext)) return '📊';
+    if (['ppt', 'pptx', 'odp', 'key'].includes(ext)) return '📽️';
+    if (['mp4', 'mov', 'avi', 'mkv', 'webm', 'wmv', 'flv', 'm4v', 'mpg', 'mpeg', '3gp'].includes(ext) || type === 'video') return '🎬';
+    if (['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'wma', 'opus', 'aiff'].includes(ext) || type === 'audio') return '🎵';
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'ico', 'tif', 'tiff', 'avif', 'heic'].includes(ext) || type === 'image') return '🖼️';
+    if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext) || type === 'archive') return '🗜️';
+    if (['psd', 'ai', 'indd', 'sketch', 'fig', 'xd', 'afphoto', 'afdesign'].includes(ext) || type === 'design') return '🎨';
+    if (['blend', 'fbx', 'obj', '3ds', 'max', 'ma', 'mb', 'abc', 'usd', 'c4d'].includes(ext) || type === '3d') return '🧊';
+    if (['prproj', 'aep', 'drp', 'fcpbundle', 'fcpxml', 'edl', 'resolve'].includes(ext) || type === 'edit') return '✂️';
+    if (['dwg', 'dxf', 'rvt', 'skp', 'ifc', 'stl'].includes(ext) || type === 'cad') return '🏗️';
+    if (['srt', 'vtt', 'ass', 'ssa', 'sub'].includes(ext) || type === 'subs') return '💬';
+    if (['txt', 'fountain', 'md', 'json', 'xml', 'yaml', 'yml', 'log', 'html'].includes(ext)) return '📝';
+    if (ext === 'drive') return '🔗';
+    return '📦';
   },
 
   afterRender() {

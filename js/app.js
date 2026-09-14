@@ -2,13 +2,56 @@
 const App = {
   activeModule: 'dashboard',
   modules: {},
+  THEME_KEY: 'cineprep_theme',
 
   init() {
+    this.loadTheme();
+    this.setupThemeToggle();
     this.setupNavigation();
     this.setupMobileMenu();
     this.setupImportExport();
     this.checkUrlInvites();
     this.navigate('dashboard');
+  },
+
+  /* ========== THEME MANAGEMENT ==========
+     Default = NOTEBOOK (light / day mode)
+     dark = Homework at Night (screen dimmed)
+     */
+  loadTheme() {
+    try {
+      const saved = localStorage.getItem(this.THEME_KEY);
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = saved || (prefersDark ? 'dark' : 'light');
+      this.applyTheme(theme);
+    } catch (e) {
+      this.applyTheme('light');
+    }
+  },
+
+  applyTheme(theme) {
+    const isDark = theme === 'dark';
+    document.body.classList.toggle('theme-dark', isDark);
+    try { localStorage.setItem(this.THEME_KEY, theme); } catch (e) {}
+    const icon = document.getElementById('themeToggleIcon');
+    if (icon) icon.textContent = isDark ? '📖' : '🌙';
+  },
+
+  toggleTheme() {
+    const isDark = document.body.classList.contains('theme-dark');
+    this.applyTheme(isDark ? 'light' : 'dark');
+  },
+
+  setupThemeToggle() {
+    const bind = () => {
+      const btn = document.getElementById('btnThemeToggle');
+      if (btn && !btn.dataset.bound) {
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', () => this.toggleTheme());
+      }
+    };
+    bind();
+    setTimeout(bind, 300);
   },
 
   registerModule(name, moduleObj) {
@@ -54,6 +97,13 @@ const App = {
     const fileImp = document.getElementById('importFile');
     const btnPDF = document.getElementById('btnExportPDF');
     const btnInvite = document.getElementById('btnInviteCollabSidebar');
+    const btnOutput = document.getElementById('btnOpenOutputView');
+
+    if (btnOutput) {
+      btnOutput.onclick = () => {
+        window.open('output.html', '_blank');
+      };
+    }
 
     if (btnExp) {
       btnExp.onclick = () => {
@@ -248,10 +298,11 @@ const App = {
     }
   },
 
-  /* Universal File Reader (Handles Word DOCX, Excel, PDF, Text, Videos) */
+  /* Universal File Reader (Handles Word DOCX, Excel, PDF, Text, Videos & ANY file as fallback) */
   readFileUniversal(file, callback) {
     const name = file.name;
-    const ext = name.split('.').pop().toLowerCase();
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    const mimeType = file.type || '';
 
     // 1. Word Document (.docx, .doc)
     if (['docx', 'doc'].includes(ext)) {
@@ -271,8 +322,8 @@ const App = {
       return;
     }
 
-    // 2. Excel & CSV (.xlsx, .xls, .csv)
-    if (['xlsx', 'xls', 'csv', 'tsv'].includes(ext)) {
+    // 2. Excel & CSV (.xlsx, .xls, .csv, .tsv, .ods)
+    if (['xlsx', 'xls', 'csv', 'tsv', 'ods'].includes(ext)) {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
@@ -295,26 +346,87 @@ const App = {
       return;
     }
 
-    // 3. Plain Text / Fountain / Script / JSON
-    if (['txt', 'fountain', 'md', 'json', 'log', 'rtf'].includes(ext)) {
+    // 3. Plain Text / Fountain / Script / JSON / Code files
+    const textExts = ['txt', 'fountain', 'md', 'json', 'log', 'rtf', 'xml', 'html', 'htm', 'css', 'js',
+                      'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'cs', 'php', 'rb', 'go', 'rs',
+                      'swift', 'kt', 'sh', 'bat', 'yaml', 'yml', 'ini', 'conf', 'env', 'sql'];
+    if (textExts.includes(ext)) {
       const reader = new FileReader();
       reader.onload = (e) => callback({ name, ext, type: 'text', content: e.target.result, dataUrl: e.target.result });
       reader.readAsText(file);
       return;
     }
 
-    // 4. Media & PDF Files (DataURL)
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      let type = 'file';
-      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) type = 'image';
-      else if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) type = 'video';
-      else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) type = 'audio';
-      else if (ext === 'pdf') type = 'pdf';
+    // 4. PDF -> dataUrl (viewer handles it)
+    if (ext === 'pdf') {
+      const reader = new FileReader();
+      reader.onload = (e) => callback({ name, ext, type: 'pdf', dataUrl: e.target.result, content: e.target.result });
+      reader.readAsDataURL(file);
+      return;
+    }
 
-      callback({ name, ext, type, dataUrl: e.target.result, content: e.target.result });
+    // 5. Images -> dataUrl
+    const imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tif', 'tiff', 'avif', 'heic'];
+    if (imgExts.includes(ext) || mimeType.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => callback({ name, ext, type: 'image', dataUrl: e.target.result, content: e.target.result });
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // 6. Videos -> dataUrl
+    const videoExts = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'wmv', 'flv', 'm4v', 'mpg', 'mpeg', '3gp'];
+    if (videoExts.includes(ext) || mimeType.startsWith('video/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => callback({ name, ext, type: 'video', dataUrl: e.target.result, content: e.target.result });
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // 7. Audio -> dataUrl
+    const audioExts = ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'wma', 'opus', 'aiff'];
+    if (audioExts.includes(ext) || mimeType.startsWith('audio/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => callback({ name, ext, type: 'audio', dataUrl: e.target.result, content: e.target.result });
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // === 8. UNIVERSAL FALLBACK: ANY other file type (ZIP, RAR, PSD, AI, Blender, 3D, Premiere, Final Cut, etc.) ===
+    // Store as dataUrl binary for download + metadata
+    const fallbackReader = new FileReader();
+    fallbackReader.onload = (e) => {
+      const dataUrl = e.target.result;
+      let fallbackType = 'file';
+      // Detect common production/professional file types for icon purposes
+      if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(ext)) fallbackType = 'archive';
+      else if (['psd', 'ai', 'indd', 'sketch', 'fig', 'xd'].includes(ext)) fallbackType = 'design';
+      else if (['blend', 'fbx', 'obj', '3ds', 'max', 'ma', 'mb', 'abc', 'usd'].includes(ext)) fallbackType = '3d';
+      else if (['prproj', 'aep', 'drp', 'fcpbundle', 'fcpxml', 'edl', 'xml'].includes(ext)) fallbackType = 'edit';
+      else if (['dwg', 'dxf', 'rvt', 'skp', 'ifc'].includes(ext)) fallbackType = 'cad';
+      else if (['srt', 'vtt', 'ass', 'ssa', 'sub'].includes(ext)) fallbackType = 'subs';
+
+      callback({
+        name,
+        ext,
+        type: fallbackType,
+        dataUrl,
+        content: dataUrl,
+        sizeBytes: file.size || 0,
+        mimeType: mimeType || 'application/octet-stream'
+      });
     };
-    reader.readAsDataURL(file);
+    fallbackReader.onerror = () => {
+      callback({
+        name,
+        ext,
+        type: 'file',
+        dataUrl: '',
+        content: 'Archivo cargado (almacenado con error de lectura en vista previa)',
+        sizeBytes: file.size || 0
+      });
+    };
+    fallbackReader.readAsDataURL(file);
   },
 
   /* In-App Native File Viewer (PDF, DOCX, XLSX, MP4, MOV, Audio, Images) */
@@ -366,8 +478,8 @@ const App = {
           </table>
         </div>
       `;
-    } else {
-      // Text / DOCX / Fountain / MD
+    } else if (['txt', 'fountain', 'md', 'docx', 'doc', 'json', 'xml', 'html', 'css', 'js', 'py', 'yaml', 'yml', 'log', 'sql', 'rtf', 'c', 'cpp', 'h', 'java', 'ts'].includes(ext)) {
+      // Text / Code files
       let contentText = fileItem.content || '';
       if (contentText.startsWith('data:')) {
         contentText = 'Documento cargado correctamente.';
@@ -375,6 +487,52 @@ const App = {
       bodyHtml = `
         <div class="card" style="max-height:65vh;overflow:auto;font-family:Courier, monospace;white-space:pre-wrap;line-height:1.6;background:#161826;color:#e1e4fa;padding:var(--space-lg)">
           ${contentText}
+        </div>
+      `;
+    } else {
+      // === FALLBACK: ANY UNKNOWN FILE TYPE (Archive, 3D, Design, Editing, CAD, etc.) ===
+      const typeLabel = {
+        'archive': '🗜️ Archivo Comprimido',
+        'design': '🎨 Archivo de Diseño',
+        '3d': '🧊 Modelo 3D',
+        'edit': '✂️ Proyecto de Edición',
+        'cad': '🏗️ Archivo CAD / Planimetría',
+        'subs': '💬 Subtítulos',
+        'file': '📦 Archivo'
+      }[type] || '📦 Archivo';
+
+      const sizeLabel = fileItem.sizeBytes ? (
+        fileItem.sizeBytes > 1048576
+          ? (fileItem.sizeBytes / 1048576).toFixed(2) + ' MB'
+          : (fileItem.sizeBytes / 1024).toFixed(1) + ' KB'
+      ) : 'N/I';
+
+      let downloadHtml = '';
+      if (fileItem.dataUrl) {
+        downloadHtml = `
+          <a href="${fileItem.dataUrl}" download="${name}" class="btn btn-primary btn-lg" style="text-decoration:none;padding:14px 32px;font-size:1rem;">
+            💾 Descargar "${name}"
+          </a>
+        `;
+      }
+
+      bodyHtml = `
+        <div class="card" style="padding:var(--space-2xl);text-align:center;max-width:600px;margin:0 auto">
+          <div style="font-size:5rem;margin-bottom:var(--space-md)">
+            ${DriveModule ? DriveModule.getFileIcon(ext, type) : '📦'}
+          </div>
+          <h3 style="margin-bottom:var(--space-sm)">${name}</h3>
+          <div style="display:inline-flex;gap:var(--space-sm);margin-bottom:var(--space-lg);flex-wrap:wrap;justify-content:center;">
+            <span class="tag tag-gold" style="text-transform:uppercase">${ext.toUpperCase()}</span>
+            <span class="tag tag-info">${typeLabel}</span>
+            <span class="tag tag-neutral">${sizeLabel}</span>
+          </div>
+          <p style="color:var(--text-secondary);margin-bottom:var(--space-xl);max-width:440px;margin-left:auto;margin-right:auto">
+            Este tipo de archivo no cuenta con vista previa nativa dentro de CinePrep.
+            <br><strong>Puedes descargarlo y abrirlo en tu aplicación profesional habitual</strong>
+            (Photoshop, Illustrator, Blender, Premiere, Final Cut, AutoCAD, WinRAR, etc.).
+          </p>
+          ${downloadHtml}
         </div>
       `;
     }
@@ -391,8 +549,13 @@ const App = {
         ${bodyHtml}
       </div>
       <div class="modal-footer">
+        ${fileItem.dataUrl ? `
+          <a href="${fileItem.dataUrl}" download="${name}" class="btn btn-secondary" style="text-decoration:none;">
+            💾 Descargar Archivo
+          </a>
+        ` : ''}
         <button class="btn btn-secondary modal-close">Cerrar Visor</button>
-        ${['pdf', 'txt', 'fountain', 'md', 'docx', 'doc', 'csv', 'xlsx'].includes(ext) ? `
+        ${['pdf', 'txt', 'fountain', 'md', 'docx', 'doc', 'csv', 'xlsx', 'xls'].includes(ext) ? `
           <button class="btn btn-primary" id="btnAutoParseInModal">⚡ Desglosar en Módulos de la App</button>
         ` : ''}
       </div>

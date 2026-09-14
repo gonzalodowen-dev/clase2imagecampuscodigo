@@ -50,8 +50,11 @@ const DashboardModule = {
               return `
                 <div class="glass-card animate-fade-in" style="display:flex;flex-direction:column;justify-content:space-between;gap:var(--space-md);">
                   <div>
+                    <div class="project-card-cover">
+                      ${pSummary.portada ? `<img src="${pSummary.portada}" alt="Portada ${pSummary.name}">` : `<div class="cover-placeholder">🎬</div>`}
+                    </div>
                     <div class="flex justify-between items-start mb-xs">
-                      <h2 style="font-size:1.45rem;color:#ffffff;line-height:1.3">🎬 ${pSummary.name}</h2>
+                      <h2 style="font-size:1.45rem;color:var(--text-primary);line-height:1.3">🎬 ${pSummary.name}</h2>
                       <span class="tag tag-gold">${pSummary.formato || 'Cortometraje'}</span>
                     </div>
                     <div class="project-meta mt-xs">
@@ -130,6 +133,7 @@ const DashboardModule = {
       </div>
       <div class="page-body">
         <div class="dashboard-hero animate-fade-in">
+          ${project.portada ? `<div class="project-cover" style="background-image:url('${project.portada}')"></div>` : ''}
           <div class="project-info">
             <h2>🎬 <span>${project.name}</span></h2>
             <div class="project-meta">
@@ -279,6 +283,25 @@ const DashboardModule = {
         <button class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
+        <div class="form-group" style="margin-bottom:var(--space-lg)">
+          <label class="form-label">🖼️ Portada / Póster del Proyecto</label>
+          <div id="coverPreviewContainer">
+            ${p.portada ? `
+              <div style="position:relative;max-width:100%;border-radius:var(--radius-lg);overflow:hidden;border:2px solid var(--border-strong);">
+                <img id="coverPreviewImg" src="${p.portada}" alt="Portada" style="width:100%;aspect-ratio:16/9;object-fit:cover;">
+                <button class="btn btn-danger btn-sm" id="btnRemoveCover" style="position:absolute;top:10px;right:10px;padding:6px 12px;font-size:0.75rem;">🗑️ Quitar</button>
+              </div>
+            ` : `
+              <div class="project-cover-empty-btn" id="coverEmptyBtn">
+                <span style="font-size:2rem;">🖼️</span>
+                <span>Haga clic aquí para cargar una imagen de portada</span>
+                <span class="text-xs text-muted" style="font-weight:400;margin-top:2px;">JPG / PNG / WEBP recomendado 16:9</span>
+              </div>
+            `}
+          </div>
+          <input type="file" id="coverFileInput" accept="image/*" style="display:none">
+          <input type="hidden" id="projPortada" value="${p.portada || ''}">
+        </div>
         <div class="form-group">
           <label class="form-label">Nombre del Proyecto / Pieza Audiovisual *</label>
           <input class="form-input" id="projName" value="${p.name || ''}" placeholder="Ej: El Legado / Cortometraje 2026">
@@ -334,6 +357,55 @@ const DashboardModule = {
       </div>
     `);
 
+    /* Cover upload handlers */
+    const coverFileInput = document.getElementById('coverFileInput');
+    const coverEmptyBtn = document.getElementById('coverEmptyBtn');
+    const coverPreviewContainer = document.getElementById('coverPreviewContainer');
+    const projPortada = document.getElementById('projPortada');
+
+    const renderCoverPreview = (dataUrl) => {
+      if (!dataUrl) {
+        coverPreviewContainer.innerHTML = `
+          <div class="project-cover-empty-btn" id="coverEmptyBtn">
+            <span style="font-size:2rem;">🖼️</span>
+            <span>Haga clic aquí para cargar una imagen de portada</span>
+            <span class="text-xs text-muted" style="font-weight:400;margin-top:2px;">JPG / PNG / WEBP recomendado 16:9</span>
+          </div>
+        `;
+        document.getElementById('coverEmptyBtn').addEventListener('click', () => coverFileInput.click());
+        return;
+      }
+      coverPreviewContainer.innerHTML = `
+        <div style="position:relative;max-width:100%;border-radius:var(--radius-lg);overflow:hidden;border:2px solid var(--border-strong);">
+          <img id="coverPreviewImg" src="${dataUrl}" alt="Portada" style="width:100%;aspect-ratio:16/9;object-fit:cover;">
+          <button class="btn btn-danger btn-sm" id="btnRemoveCover" style="position:absolute;top:10px;right:10px;padding:6px 12px;font-size:0.75rem;">🗑️ Quitar</button>
+        </div>
+      `;
+      document.getElementById('btnRemoveCover').addEventListener('click', (e) => {
+        e.preventDefault();
+        projPortada.value = '';
+        renderCoverPreview('');
+      });
+    };
+
+    if (coverEmptyBtn) coverEmptyBtn.addEventListener('click', () => coverFileInput.click());
+    coverFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        App.toast('El archivo debe ser una imagen (JPG, PNG, WEBP)', 'warning');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const dataUrl = evt.target.result;
+        projPortada.value = dataUrl;
+        renderCoverPreview(dataUrl);
+      };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+
     document.getElementById('btnSaveProject').addEventListener('click', () => {
       const name = document.getElementById('projName').value.trim();
       if (!name) { App.toast('El nombre es obligatorio', 'warning'); return; }
@@ -344,7 +416,8 @@ const DashboardModule = {
         productora: document.getElementById('projProductora').value.trim(),
         genero: document.getElementById('projGenero').value,
         formato: document.getElementById('projFormato').value,
-        duracionEstimada: document.getElementById('projDuracion').value.trim()
+        duracionEstimada: document.getElementById('projDuracion').value.trim(),
+        portada: document.getElementById('projPortada').value || ''
       };
 
       if (existing) {
