@@ -3,7 +3,7 @@ const Storage = {
 
   USER_KEY: 'cineprep_user_profile',
 
-  getUser() {
+    getUser() {
     try {
       const raw = localStorage.getItem(this.USER_KEY);
       if (raw) return JSON.parse(raw);
@@ -16,7 +16,9 @@ const Storage = {
       avatar: '🎬',
       color: '#c89524'
     };
-    this.setUser(defaultUser);
+    try {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(defaultUser));
+    } catch(e) {}
     return defaultUser;
   },
 
@@ -24,12 +26,6 @@ const Storage = {
     try {
       localStorage.setItem(this.USER_KEY, JSON.stringify(userObj));
     } catch(e) {}
-    if (typeof socket !== 'undefined' && socket) {
-      const p = this.getActiveProject();
-      if (p && p.code) {
-        socket.emit('join-project-room', { projectCode: p.code, user: userObj });
-      }
-    }
   },
 
   generateProjectCode() {
@@ -155,17 +151,20 @@ const Storage = {
     return null;
   },
 
-  saveProject(project) {
+    saveProject(project) {
+    if (!project) return;
+    if (!project.id) project.id = 'proj_' + Date.now();
     if (!project.code) {
       project.code = this.generateProjectCode();
     }
-    const currentUser = this.getUser();
-    if (!project.members) project.members = [];
-    if (!project.members.some(m => m.id === currentUser.id)) {
-      project.members.push(currentUser);
-    }
-    if (!project) return;
-    if (!project.id) project.id = 'proj_' + Date.now();
+    try {
+      const currentUser = this.getUser();
+      if (!project.members) project.members = [];
+      if (currentUser && !project.members.some(m => m.id === currentUser.id)) {
+        project.members.push(currentUser);
+      }
+    } catch(e) {}
+
     project.updatedAt = new Date().toISOString();
     project = this.cleanProjectData(project);
 
@@ -176,12 +175,14 @@ const Storage = {
       const idx = list.findIndex(p => p.id === project.id);
       const summary = {
         id: project.id,
+        code: project.code,
         name: project.name || 'Proyecto Sin Nombre',
         director: project.director || '',
         productora: project.productora || '',
         genero: project.genero || '',
         formato: project.formato || 'Cortometraje',
         duracionEstimada: project.duracionEstimada || '',
+        members: project.members || [],
         updatedAt: project.updatedAt,
         createdAt: project.createdAt || project.updatedAt
       };
@@ -201,51 +202,6 @@ const Storage = {
     } catch (e) {
       console.error('Error al guardar el proyecto:', e);
     }
-  },
-
-  createProject(data) {
-    const id = 'proj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-    const newProject = {
-      id,
-      name: data.name || 'Nuevo Proyecto Audiovisual',
-      director: data.director || '',
-      productora: data.productora || '',
-      genero: data.genero || 'Drama',
-      formato: data.formato || 'Cortometraje',
-      duracionEstimada: data.duracionEstimada || '15 min',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      guion: { guionTexto: '', logline: '', tagline: '', sinopsisCorta: '', sinopsisLarga: '', tratamiento: '', escaleta: [], tarjetas: [] },
-      guionTecnico: { planos: [] },
-      storyboard: { frames: [] },
-      moodboards: { vestuario: [], arte: [] },
-      planProduccion: { tareas: [] },
-      presupuesto: { moneda: 'ARS', areas: [] },
-      casting: { personajes: [], actores: [] },
-      catering: { dias: [], restricciones: [], proveedores: [] },
-      traslados: { traslados: [], retiros: [], devoluciones: [] },
-      planRodaje: { dias: [] },
-      contactos: [],
-      archivosDrive: []
-    };
-
-    this.saveProject(newProject);
-    this.setActiveProjectId(id);
-    return newProject;
-  },
-
-  duplicateProject(id) {
-    const original = this.getProject(id);
-    if (!original) return null;
-
-    const copy = JSON.parse(JSON.stringify(original));
-    copy.id = 'proj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-    copy.name = `${original.name} (Copia)`;
-    copy.createdAt = new Date().toISOString();
-    copy.updatedAt = new Date().toISOString();
-
-    this.saveProject(copy);
-    return copy;
   },
 
   deleteProject(id) {
