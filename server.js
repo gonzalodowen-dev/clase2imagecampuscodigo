@@ -158,16 +158,16 @@ io.on('connection', (socket) => {
 
     persistData();
 
-    // Broadcast to room + global
+    // Broadcast to room (except sender) + output.html
     const room = projectData.code.toUpperCase();
-    io.to(room).emit('project-changed', {
+    socket.to(room).emit('project-changed', {
       project: projectData,
       projectsList: activeState.projectsList,
       activeProjectId: activeState.activeProjectId
     });
     
-    // Also emit globally for output.html
-    io.emit('project-changed', {
+    // Broadcast to all other sockets except sender
+    socket.broadcast.emit('project-changed', {
       project: projectData,
       projectsList: activeState.projectsList,
       activeProjectId: activeState.activeProjectId

@@ -59,12 +59,14 @@ const Storage = {
     this.socket.on('project-changed', (data) => {
       if (data && data.project) {
         this.saveProjectsList(data.projectsList || []);
-        if (data.activeProjectId) this.setActiveProjectId(data.activeProjectId);
+        const currentActive = this.getActiveProjectId();
         localStorage.setItem('cineprep_proj_' + data.project.id, JSON.stringify(data.project));
 
-        // Trigger UI refresh if App is ready
-        if (typeof App !== 'undefined' && App.activeModule) {
-          App.navigate(App.activeModule);
+        // Only refresh UI if active project was updated by someone else
+        if (data.activeProjectId && data.activeProjectId === currentActive) {
+          if (typeof App !== 'undefined' && App.activeModule) {
+            App.navigate(App.activeModule);
+          }
         }
       }
     });
@@ -137,16 +139,7 @@ const Storage = {
       }
     }
 
-    if (!targetId && list.length === 0) {
-      return this.createProject({
-        name: 'Mi Primera Película',
-        director: 'Director / Productor',
-        productora: 'Productora CinePrep',
-        genero: 'Drama',
-        formato: 'Cortometraje',
-        duracionEstimada: '15 min'
-      });
-    }
+    return null;
 
     return null;
   },
