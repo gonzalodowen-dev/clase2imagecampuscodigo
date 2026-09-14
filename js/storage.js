@@ -1,5 +1,46 @@
 /* CinePrep - Storage Engine con Sincronización Socket.IO en Tiempo Real */
 const Storage = {
+
+  USER_KEY: 'cineprep_user_profile',
+
+  getUser() {
+    try {
+      const raw = localStorage.getItem(this.USER_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    const defaultUser = {
+      id: 'usr_' + Math.random().toString(36).substr(2, 9),
+      name: 'Usuario CinePrep',
+      role: 'Director / Creador',
+      email: '',
+      avatar: '🎬',
+      color: '#c89524'
+    };
+    this.setUser(defaultUser);
+    return defaultUser;
+  },
+
+  setUser(userObj) {
+    try {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(userObj));
+    } catch(e) {}
+    if (typeof socket !== 'undefined' && socket) {
+      const p = this.getActiveProject();
+      if (p && p.code) {
+        socket.emit('join-project-room', { projectCode: p.code, user: userObj });
+      }
+    }
+  },
+
+  generateProjectCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let result = 'CP-';
+    for (let i = 0; i < 4; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  },
+
   LIST_KEY: 'cineprep_projects_list',
   ACTIVE_KEY: 'cineprep_active_project_id',
   socket: typeof io !== 'undefined' ? io() : null,
@@ -110,6 +151,14 @@ const Storage = {
   },
 
   saveProject(project) {
+    if (!project.code) {
+      project.code = this.generateProjectCode();
+    }
+    const currentUser = this.getUser();
+    if (!project.members) project.members = [];
+    if (!project.members.some(m => m.id === currentUser.id)) {
+      project.members.push(currentUser);
+    }
     if (!project) return;
     if (!project.id) project.id = 'proj_' + Date.now();
     project.updatedAt = new Date().toISOString();

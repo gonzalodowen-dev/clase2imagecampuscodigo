@@ -30,7 +30,20 @@
 
     <!-- Sidebar Navigation -->
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
+      <div class="sidebar-header" style="flex-direction:column;align-items:flex-start;gap:12px;">
+        <div class="sidebar-logo">
+          <div class="logo-icon">🎬</div>
+          <div class="logo-text">Cine<span>Prep</span></div>
+        </div>
+        <div class="user-profile-badge" id="btnEditUserProfile" title="Editar Perfil de Usuario">
+          <div class="user-avatar" id="sidebarUserAvatar">🎬</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebarUserName">CinePrep User</div>
+            <div class="user-role" id="sidebarUserRole">Director / Creador</div>
+          </div>
+          <span class="user-edit-icon">✏️</span>
+        </div>
+      </div>
         <div class="sidebar-logo">
           <div class="logo-icon">🎬</div>
           <div class="logo-text">Cine<span>Prep</span></div>
@@ -99,6 +112,14 @@
       </nav>
 
       <div style="padding: var(--space-md); border-top: 1px solid var(--border-subtle);">
+        <div class="project-code-chip mb-xs" id="sidebarProjectCodeChip">
+          <span class="code-label">🔑 CÓDIGO PROYECTO:</span>
+          <span class="code-value" id="sidebarProjectCode">CP-XXXX</span>
+          <button class="btn-copy-code" id="btnCopyProjectCode" title="Copiar Código de Compartición">📋</button>
+        </div>
+        <button class="btn btn-secondary btn-sm w-full mb-xs" id="btnJoinProjectCode" style="justify-content: center; gap: var(--space-sm); background: linear-gradient(135deg, #1d3557 0%, #2a4d77 100%); color:#fff;">
+          <span>🔑</span> Unirse a Proyecto con Código
+        </button>
         <button class="btn btn-secondary btn-sm w-full mb-xs" id="btnThemeToggle" style="justify-content: center; gap: var(--space-sm);">
           <span id="themeToggleIcon">☀️</span> <span id="themeToggleText">Modo Claro</span>
         </button>
@@ -157,5 +178,73 @@
   <script src="js/plan-rodaje.js"></script>
   <script src="js/contactos.js"></script>
   <script src="js/colaboradores.js"></script>
+
+  <!-- Modal: Editar Perfil de Usuario -->
+  <div class="modal-overlay" id="modalUserProfile">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>👤 Mi Perfil de Usuario en CinePrep</h2>
+        <button class="modal-close" id="btnCloseUserProfile">&times;</button>
+      </div>
+      <form id="formUserProfile" style="padding: var(--space-lg);">
+        <div class="form-group">
+          <label class="form-label">Nombre Completo o Alias</label>
+          <input type="text" class="form-input" id="profUserName" placeholder="Ej: Sofía Coppola" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rol Principal en el Proyecto</label>
+          <select class="form-select" id="profUserRole">
+            <option value="Director / Directora">🎬 Director / Directora</option>
+            <option value="Productor / Productora">💼 Productor / Productora</option>
+            <option value="Guionista">✍️ Guionista</option>
+            <option value="Director/a de Fotografía (DF)">🎥 Director/a de Fotografía (DF)</option>
+            <option value="Director/a de Arte">🎨 Director/a de Arte</option>
+            <option value="Asistente de Dirección (AD)">📋 Asistente de Dirección (AD)</option>
+            <option value="Jefe/a de Producción">📦 Jefe/a de Producción</option>
+            <option value="Montajista / Editor">✂️ Montajista / Editor</option>
+            <option value="Diseñador/a de Sonido">🎧 Diseñador/a de Sonido</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icono de Avatar</label>
+          <div class="avatar-selector">
+            <label><input type="radio" name="avatarIcon" value="🎬" checked> 🎬</label>
+            <label><input type="radio" name="avatarIcon" value="🎥"> 🎥</label>
+            <label><input type="radio" name="avatarIcon" value="✍️"> ✍️</label>
+            <label><input type="radio" name="avatarIcon" value="🎨"> 🎨</label>
+            <label><input type="radio" name="avatarIcon" value="💼"> 💼</label>
+            <label><input type="radio" name="avatarIcon" value="🎧"> 🎧</label>
+            <label><input type="radio" name="avatarIcon" value="✂️"> ✂️</label>
+          </div>
+        </div>
+        <div class="flex justify-end gap-sm mt-lg">
+          <button type="button" class="btn btn-ghost" id="btnCancelUserProfile">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Perfil</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Unirse a Proyecto por Código -->
+  <div class="modal-overlay" id="modalJoinProjectCode">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🔑 Unirse a un Proyecto con Código</h2>
+        <button class="modal-close" id="btnCloseJoinCode">&times;</button>
+      </div>
+      <form id="formJoinProjectCode" style="padding: var(--space-lg);">
+        <p class="text-secondary mb-md">Ingresa el código único de 6 caracteres (ej: <strong>CP-8492</strong>) que te compartió el director o productor del proyecto.</p>
+        <div class="form-group">
+          <label class="form-label">Código del Proyecto</label>
+          <input type="text" class="form-input" id="inputProjectCode" placeholder="Ej: CP-8492" style="font-size:1.4rem;letter-spacing:0.1em;text-transform:uppercase;text-align:center;font-weight:bold;" required>
+        </div>
+        <div class="flex justify-end gap-sm mt-lg">
+          <button type="button" class="btn btn-ghost" id="btnCancelJoinCode">Cancelar</button>
+          <button type="submit" class="btn btn-primary">🔍 Conectarse al Proyecto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </body>
 </html>

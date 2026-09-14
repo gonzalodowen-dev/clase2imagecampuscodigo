@@ -11,6 +11,7 @@ const App = {
     this.setupMobileMenu();
     this.setupImportExport();
     this.checkUrlInvites();
+    this.setupUserAndCodeSystem();
     this.navigate('dashboard');
   },
 
@@ -55,6 +56,180 @@ const App = {
     bind();
     setTimeout(bind, 300);
   },
+
+  
+  // User Profile & Code Project Sync Logic
+  setupUserAndCodeSystem() {
+    this.updateUserProfileUI();
+    this.updateProjectCodeUI();
+
+    // User Edit Profile
+    const btnEdit = document.getElementById('btnEditUserProfile');
+    const modalProf = document.getElementById('modalUserProfile');
+    const btnCloseProf = document.getElementById('btnCloseUserProfile');
+    const btnCancelProf = document.getElementById('btnCancelUserProfile');
+    const formProf = document.getElementById('formUserProfile');
+
+    if (btnEdit) {
+      btnEdit.addEventListener('click', () => {
+        const u = Storage.getUser();
+        document.getElementById('profUserName').value = u.name || '';
+        document.getElementById('profUserRole').value = u.role || 'Director / Directora';
+        modalProf.classList.add('active');
+      });
+    }
+    const closeProf = () => modalProf.classList.remove('active');
+    if (btnCloseProf) btnCloseProf.addEventListener('click', closeProf);
+    if (btnCancelProf) btnCancelProf.addEventListener('click', closeProf);
+
+    if (formProf) {
+      formProf.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const u = Storage.getUser();
+        u.name = document.getElementById('profUserName').value.trim();
+        u.role = document.getElementById('profUserRole').value;
+        const iconSel = formProf.querySelector('input[name="avatarIcon"]:checked');
+        if (iconSel) u.avatar = iconSel.value;
+        
+        Storage.setUser(u);
+        this.updateUserProfileUI();
+        closeProf();
+        this.showToast('✅ Perfil de usuario actualizado', 'success');
+
+        // Also update project member list
+        const p = Storage.getActiveProject();
+        if (p) {
+          if (!p.members) p.members = [];
+          const idx = p.members.findIndex(m => m.id === u.id);
+          if (idx >= 0) p.members[idx] = u;
+          else p.members.push(u);
+          Storage.saveProject(p);
+        }
+      });
+    }
+
+    // Copy Project Code
+    const btnCopy = document.getElementById('btnCopyProjectCode');
+    if (btnCopy) {
+      btnCopy.addEventListener('click', () => {
+        const p = Storage.getActiveProject();
+        if (p && p.code) {
+          navigator.clipboard.writeText(p.code);
+          this.showToast(`📋 Código ${p.code} copiado al portapapeles`, 'info');
+        }
+      });
+    }
+
+    // Join Project by Code Modal
+    const btnJoin = document.getElementById('btnJoinProjectCode');
+    const modalJoin = document.getElementById('modalJoinProjectCode');
+    const btnCloseJoin = document.getElementById('btnCloseJoinCode');
+    const btnCancelJoin = document.getElementById('btnCancelJoinCode');
+    const formJoin = document.getElementById('formJoinProjectCode');
+
+    if (btnJoin) {
+      btnJoin.addEventListener('click', () => {
+        modalJoin.classList.add('active');
+      });
+    }
+    const closeJoin = () => modalJoin.classList.remove('active');
+    if (btnCloseJoin) btnCloseJoin.addEventListener('click', closeJoin);
+    if (btnCancelJoin) btnCancelJoin.addEventListener('click', closeJoin);
+
+    if (formJoin) {
+      formJoin.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = document.getElementById('inputProjectCode').value.trim().toUpperCase();
+        if (!code) return;
+
+        try {
+          const res = await fetch(`/api/projects/by-code/${code}`);
+          const data = await res.json();
+          if (data.success && data.project) {
+            const project = data.project;
+            const u = Storage.getUser();
+            if (!project.members) project.members = [];
+            if (!project.members.some(m => m.id === u.id)) {
+              project.members.push(u);
+            }
+            Storage.saveProject(project);
+            closeJoin();
+            this.showToast(`🎉 Te has unido con éxito al proyecto "${project.name}"!`, 'success');
+            this.navigate('dashboard');
+            this.updateProjectCodeUI();
+          } else {
+            this.showToast('❌ Código de proyecto no encontrado. Verifica el código e intenta nuevamente.', 'danger');
+          }
+        } catch(err) {
+          this.showToast('⚠️ Error al buscar proyecto por código.', 'warning');
+        }
+      });
+    }
+
+    // Listen to Room Users updates via Socket.IO
+    if (typeof socket !== 'undefined' && socket) {
+      socket.on('room-users-updated', (users) => {
+        this.renderLiveCollaboratorsBar(users);
+      });
+    }
+  },
+
+  updateUserProfileUI() {
+    const u = Storage.getUser();
+    const avatarEl = document.getElementById('sidebarUserAvatar');
+    const nameEl = document.getElementById('sidebarUserName');
+    const roleEl = document.getElementById('sidebarUserRole');
+    if (avatarEl) avatarEl.textContent = u.avatar || '🎬';
+    if (nameEl) nameEl.textContent = u.name || 'Usuario CinePrep';
+    if (roleEl) roleEl.textContent = u.role || 'Director / Creador';
+  },
+
+  updateProjectCodeUI() {
+    const p = Storage.getActiveProject();
+    const codeEl = document.getElementById('sidebarProjectCode');
+    if (codeEl) {
+      if (p && p.code) {
+        codeEl.textContent = p.code;
+      } else if (p) {
+        p.code = Storage.generateProjectCode();
+        Storage.saveProject(p);
+        codeEl.textContent = p.code;
+      } else {
+        codeEl.textContent = 'CP-XXXX';
+      }
+    }
+  },
+
+  renderLiveCollaboratorsBar(usersList) {
+    let bar = document.getElementById('liveCollaboratorsBar');
+    if (!bar) {
+      const header = document.querySelector('.page-header');
+      if (header) {
+        bar = document.createElement('div');
+        bar.id = 'liveCollaboratorsBar';
+        bar.className = 'live-collaborators-bar';
+        header.appendChild(bar);
+      }
+    }
+    if (!bar) return;
+
+    if (!usersList || usersList.length === 0) {
+      bar.innerHTML = '';
+      return;
+    }
+
+    bar.innerHTML = `
+      <span class="live-collab-label">🟢 EN VIVO (${usersList.length}):</span>
+      <div class="live-avatars">
+        ${usersList.map(u => `
+          <div class="collab-avatar-chip" title="${u.name} (${u.role})">
+            <span>${u.avatar || '🎬'}</span> ${u.name}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  },
+
 
   registerModule(name, moduleObj) {
     this.modules[name] = moduleObj;
@@ -136,7 +311,8 @@ const App = {
               Storage.saveProject(project);
               Storage.setActiveProjectId(project.id);
               this.toast('¡Proyecto importado exitosamente!', 'success');
-              this.navigate('dashboard');
+              this.setupUserAndCodeSystem();
+    this.navigate('dashboard');
             } catch (err) {
               this.toast('Error al leer archivo JSON', 'danger');
             }
@@ -180,6 +356,7 @@ const App = {
     }
 
     this.activeModule = moduleName;
+    this.updateProjectCodeUI();
     document.querySelectorAll('[data-module]').forEach(item => {
       item.classList.toggle('active', item.dataset.module === moduleName);
     });

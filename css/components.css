@@ -566,3 +566,71 @@ body.theme-dark .modal::before {
   color: #2b1d00 !important;
   border-color: #8a6a12 !important;
 }
+
+
+/* ============================================
+   USER PROFILE BADGE & PROJECT CODE CHIP
+   ============================================ */
+.user-profile-badge {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 12px; border-radius: var(--radius-md);
+  cursor: pointer; transition: all var(--transition-fast);
+  width: 100%; margin-top: 4px;
+}
+.user-profile-badge:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--accent-gold);
+}
+.user-profile-badge .user-avatar {
+  font-size: 1.5rem; width: 36px; height: 36px;
+  background: radial-gradient(circle, #f7d070 0%, #d6a424 100%);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid #fff; flex-shrink: 0;
+}
+.user-profile-badge .user-info { flex: 1; overflow: hidden; }
+.user-profile-badge .user-name { font-size: 0.95rem; font-weight: 700; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-profile-badge .user-role { font-size: 0.78rem; color: #ffd166; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-profile-badge .user-edit-icon { font-size: 0.9rem; opacity: 0.7; }
+
+.project-code-chip {
+  background: linear-gradient(135deg, #1b2838 0%, #101924 100%);
+  border: 1.5px solid var(--accent-gold-dark);
+  padding: 6px 10px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+.project-code-chip .code-label { font-size: 0.72rem; font-weight: 800; color: #ffd166; text-transform: uppercase; }
+.project-code-chip .code-value { font-family: monospace; font-size: 1.05rem; font-weight: 900; color: #ffffff; letter-spacing: 0.08em; }
+.project-code-chip .btn-copy-code {
+  background: transparent; border: none; cursor: pointer; font-size: 1rem; padding: 2px 4px;
+  transition: transform var(--transition-fast);
+}
+.project-code-chip .btn-copy-code:hover { transform: scale(1.2); }
+
+.avatar-selector {
+  display: flex; gap: 12px; font-size: 1.6rem; margin-top: 6px; flex-wrap: wrap;
+}
+.avatar-selector label {
+  cursor: pointer; padding: 6px 10px; border: 2px solid var(--border-default);
+  border-radius: var(--radius-sm); transition: all var(--transition-fast);
+}
+.avatar-selector label:has(input:checked) {
+  border-color: var(--accent-gold); background: rgba(233, 196, 106, 0.2);
+}
+
+.live-collaborators-bar {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding: 6px 12px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-full); width: fit-content;
+}
+.live-collab-label { font-size: 0.78rem; font-weight: 800; color: #4ade80; }
+.live-avatars { display: flex; gap: 6px; flex-wrap: wrap; }
+.collab-avatar-chip {
+  font-size: 0.8rem; font-weight: 700; color: var(--text-primary);
+  background: var(--bg-surface); border: 1px solid var(--border-strong);
+  padding: 2px 8px; border-radius: var(--radius-full); display: flex; align-items: center; gap: 4px;
+}
