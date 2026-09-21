@@ -15,10 +15,11 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data', 'projects.json');
 const USERS_FILE = path.join(__dirname, 'data', 'users.json');
+const PUBLIC_PATH = path.join(__dirname, 'public');
 
 app.use(cors());
 app.use(express.json({ limit: '100mb' }));
-app.use(express.static(__dirname));
+app.use(express.static(PUBLIC_PATH));
 
 // Code Generator Helper
 function generateCode() {
@@ -35,7 +36,7 @@ let activeState = {
   projectsList: [],
   activeProjectId: null,
   activeProjectData: null,
-  allProjects: {} // id -> projectData mapping
+  allProjects: {}
 };
 let usersDb = {};
 
@@ -50,7 +51,6 @@ if (fs.existsSync(DATA_FILE)) {
       activeState.activeProjectData = parsed.activeProjectData || null;
       activeState.allProjects = parsed.allProjects || {};
       
-      // Ensure active project is in allProjects map
       if (activeState.activeProjectData && activeState.activeProjectData.id) {
         if (!activeState.activeProjectData.code) {
           activeState.activeProjectData.code = generateCode();
@@ -93,16 +93,13 @@ function persistUsers() {
 }
 
 // Track active socket users per project room
-const roomUsers = {}; // roomCode -> { socketId: userObj }
+const roomUsers = {};
 
 // Socket.IO Real-time Connection Logic
 io.on('connection', (socket) => {
   console.log(`[CinePrep Socket] Cliente conectado: ${socket.id}`);
-
-  // Send current state
   socket.emit('init-state', activeState);
 
-  // User Join Room by Project Code
   socket.on('join-project-room', ({ projectCode, user }) => {
     if (!projectCode) return;
     const room = projectCode.toUpperCase();
@@ -113,17 +110,12 @@ io.on('connection', (socket) => {
     if (!roomUsers[room]) roomUsers[room] = {};
     roomUsers[room][socket.id] = socket.currentUser;
 
-    console.log(`[CinePrep Socket] User ${socket.currentUser.name} se unió a la sala: ${room}`);
-
-    // Broadcast room users update
     io.to(room).emit('room-users-updated', Object.values(roomUsers[room]));
   });
 
-  // Handle Project Save & Real-time Broadcast
   socket.on('save-project', (projectData) => {
     if (!projectData || !projectData.id) return;
     
-    // Ensure code exists
     if (!projectData.code) {
       projectData.code = generateCode();
     }
@@ -134,7 +126,6 @@ io.on('connection', (socket) => {
     if (!activeState.allProjects) activeState.allProjects = {};
     activeState.allProjects[projectData.id] = projectData;
 
-    // Update list summary
     if (!activeState.projectsList) activeState.projectsList = [];
     const idx = activeState.projectsList.findIndex(p => p.id === projectData.id);
     const summary = {
@@ -146,6 +137,7 @@ io.on('connection', (socket) => {
       genero: projectData.genero || '',
       formato: projectData.formato || 'Cortometraje',
       duracionEstimada: projectData.duracionEstimada || '',
+      portada: projectData.portada || '',
       members: projectData.members || [],
       updatedAt: new Date().toISOString()
     };
@@ -158,7 +150,6 @@ io.on('connection', (socket) => {
 
     persistData();
 
-    // Broadcast to room (except sender) + output.html
     const room = projectData.code.toUpperCase();
     socket.to(room).emit('project-changed', {
       project: projectData,
@@ -166,7 +157,6 @@ io.on('connection', (socket) => {
       activeProjectId: activeState.activeProjectId
     });
     
-    // Broadcast to all other sockets except sender
     socket.broadcast.emit('project-changed', {
       project: projectData,
       projectsList: activeState.projectsList,
@@ -193,11 +183,8 @@ app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', onlineClients: io.engine.clientsCount, activeProjectId: activeState.activeProjectId });
 });
 
-// API: Search Project by Code
 app.get('/api/projects/by-code/:code', (req, res) => {
   const code = (req.params.code || '').trim().toUpperCase();
-  
-  // Search in allProjects
   let found = null;
   if (activeState.allProjects) {
     found = Object.values(activeState.allProjects).find(p => p.code && p.code.toUpperCase() === code);
@@ -213,21 +200,28 @@ app.get('/api/projects/by-code/:code', (req, res) => {
   }
 });
 
-// API: Save/Update User Profile
 app.post('/api/users/profile', (req, res) => {
   const user = req.body;
   if (!user || !user.id) return res.status(400).json({ success: false, message: 'Datos de usuario inválidos.' });
-
   usersDb[user.id] = user;
   persistUsers();
   res.json({ success: true, user });
 });
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(PUBLIC_PATH, 'index.html'));
+});
+
+app.get('/output.html', (req, res) => {
+  res.sendFile(path.join(PUBLIC_PATH, 'output.html'));
+});
+
 server.listen(PORT, () => {
   console.log('======================================================');
-  console.log(`   🎬 CinePrep Node.js Server Multi-Usuario en Ejecución`);
-  console.log(`   🌐 Interfaz Web: http://localhost:${PORT}`);
+  console.log(`   🎬 CinePrep Node.js Server en Ejecución`);
+  console.log(`   🌐 Servidor corriendo en el Puerto: ${PORT}`);
+  console.log(`   👉 Interfaz Web: http://localhost:${PORT}`);
   console.log(`   📺 Salida Visual (Output): http://localhost:${PORT}/output.html`);
-  console.log(`   ⚡ Sincronización de Proyectos por Código Activada`);
+  console.log(`   ⚡ Sincronización Socket.IO Activada`);
   console.log('======================================================');
 });

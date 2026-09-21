@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CinePrep - Asistente profesional de pre-producción cinematográfica. Aplicación Node.js con sincronización Socket.IO en tiempo real.">
+  <title>CinePrep | Asistente de Pre-Producción Cinematográfica</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/modules.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+  
+  <!-- Socket.IO Client Library -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- SheetJS for Excel (.xlsx, .xls, .csv) native parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- JSZip for native ZIP / DOCX unzipping -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- Mammoth.js for Word (.docx, .doc) native text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <!-- html2pdf for PDF Dossier export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">☰</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header" style="flex-direction:column;align-items:flex-start;gap:12px;">
+        <div class="sidebar-logo">
+          <div class="logo-icon">🎬</div>
+          <div class="logo-text">Cine<span>Prep</span></div>
+        </div>
+        <div class="user-profile-badge" id="btnEditUserProfile" title="Editar Perfil de Usuario">
+          <div class="user-avatar" id="sidebarUserAvatar">🎬</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebarUserName">CinePrep User</div>
+            <div class="user-role" id="sidebarUserRole">Director / Creador</div>
+          </div>
+          <span class="user-edit-icon">✏️</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav">
+        <div class="nav-section-label">General</div>
+        <div class="nav-item active" data-module="dashboard">
+          <span class="nav-icon">🎬</span>
+          <span>Proyectos & Inicio</span>
+        </div>
+        <div class="nav-item" data-module="drive">
+          <span class="nav-icon">📁</span>
+          <span>Archivos & Nube Drive</span>
+        </div>
+
+        <div class="nav-section-label">Desarrollo Creativo</div>
+        <div class="nav-item" data-module="guion">
+          <span class="nav-icon">📝</span>
+          <span>Guion y Derivados</span>
+        </div>
+        <div class="nav-item" data-module="guion-tecnico">
+          <span class="nav-icon">🎥</span>
+          <span>Guion Técnico</span>
+        </div>
+        <div class="nav-item" data-module="storyboard">
+          <span class="nav-icon">🖼️</span>
+          <span>Storyboard</span>
+        </div>
+        <div class="nav-item" data-module="moodboard">
+          <span class="nav-icon">🎨</span>
+          <span>Moodboards</span>
+        </div>
+
+        <div class="nav-section-label">Producción</div>
+        <div class="nav-item" data-module="plan-produccion">
+          <span class="nav-icon">📋</span>
+          <span>Plan de Producción</span>
+        </div>
+        <div class="nav-item" data-module="presupuesto">
+          <span class="nav-icon">💰</span>
+          <span>Presupuesto</span>
+        </div>
+        <div class="nav-item" data-module="casting">
+          <span class="nav-icon">🎭</span>
+          <span>Casting</span>
+        </div>
+
+        <div class="nav-section-label">Logística</div>
+        <div class="nav-item" data-module="catering">
+          <span class="nav-icon">🍽️</span>
+          <span>Catering</span>
+        </div>
+        <div class="nav-item" data-module="traslados">
+          <span class="nav-icon">🚗</span>
+          <span>Traslados</span>
+        </div>
+        <div class="nav-item" data-module="plan-rodaje">
+          <span class="nav-icon">📅</span>
+          <span>Plan de Rodaje</span>
+        </div>
+        <div class="nav-item" data-module="contactos">
+          <span class="nav-icon">📞</span>
+          <span>Contactos & Crew</span>
+        </div>
+      </nav>
+
+      <div style="padding: var(--space-md); border-top: 1px solid var(--border-subtle);">
+        <div class="project-code-chip mb-xs" id="sidebarProjectCodeChip">
+          <span class="code-label">🔑 CÓDIGO PROYECTO:</span>
+          <span class="code-value" id="sidebarProjectCode">CP-XXXX</span>
+          <button class="btn-copy-code" id="btnCopyProjectCode" title="Copiar Código de Compartición">📋</button>
+        </div>
+        <button class="btn btn-primary btn-sm w-full mb-xs" id="btnSidebarNewProject" style="justify-content: center; gap: var(--space-sm);">
+          <span>➕</span> Nuevo Proyecto
+        </button>
+        <button class="btn btn-secondary btn-sm w-full mb-xs" id="btnJoinProjectCode" style="justify-content: center; gap: var(--space-sm); background: linear-gradient(135deg, #1d3557 0%, #2a4d77 100%); color:#fff;">
+          <span>🔑</span> Unirse a Proyecto con Código
+        </button>
+        <button class="btn btn-secondary btn-sm w-full mb-xs" id="btnThemeToggle" style="justify-content: center; gap: var(--space-sm);">
+          <span id="themeToggleIcon">☀️</span> <span id="themeToggleText">Modo Claro</span>
+        </button>
+        <button class="btn btn-primary btn-sm w-full mb-xs" id="btnOpenOutputView" style="justify-content: center; gap: var(--space-sm); background: linear-gradient(135deg, #d4a853 0%, #b38634 100%); color:#000; font-weight:bold;">
+          <span>📺</span> Abrir Salida Visual (output.html)
+        </button>
+        <button class="btn btn-secondary btn-sm w-full mb-xs" id="btnInviteCollabSidebar" style="justify-content: center; gap: var(--space-sm);">
+          <span>👥</span> Invitar Colaboradores
+        </button>
+        <button class="btn btn-secondary btn-sm w-full mb-xs" id="btnExportPDF" style="justify-content: center; gap: var(--space-sm);">
+          <span>📄</span> Exportar Dossier PDF
+        </button>
+        <div class="flex gap-xs mt-xs">
+          <button class="btn btn-ghost btn-sm w-full" id="btnExport" style="justify-content: center; font-size:0.8rem">
+            <span>📤</span> Exp JSON
+          </button>
+          <button class="btn btn-ghost btn-sm w-full" id="btnImport" style="justify-content: center; font-size:0.8rem">
+            <span>📥</span> Imp JSON
+          </button>
+        </div>
+        <input type="file" id="importFile" accept="*/*" style="display:none">
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content" id="mainContent">
+      <!-- Content rendered by JS modules -->
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Modal Container -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+  <!-- Hidden Container for PDF Export Generation -->
+  <div id="pdfExportContainer" style="display:none;"></div>
+
+  <!-- Scripts -->
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/drive.js"></script>
+  <script src="js/guion.js"></script>
+  <script src="js/guion-tecnico.js"></script>
+  <script src="js/storyboard.js"></script>
+  <script src="js/moodboard.js"></script>
+  <script src="js/plan-produccion.js"></script>
+  <script src="js/presupuesto.js"></script>
+  <script src="js/casting.js"></script>
+  <script src="js/catering.js"></script>
+  <script src="js/traslados.js"></script>
+  <script src="js/plan-rodaje.js"></script>
+  <script src="js/contactos.js"></script>
+  <script src="js/colaboradores.js"></script>
+
+  <!-- Modal: Editar Perfil de Usuario -->
+  <div class="modal-overlay" id="modalUserProfile">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>👤 Mi Perfil de Usuario en CinePrep</h2>
+        <button class="modal-close" id="btnCloseUserProfile">&times;</button>
+      </div>
+      <form id="formUserProfile" style="padding: var(--space-lg);">
+        <div class="form-group">
+          <label class="form-label">Nombre Completo o Alias</label>
+          <input type="text" class="form-input" id="profUserName" placeholder="Ej: Sofía Coppola" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rol Principal en el Proyecto</label>
+          <select class="form-select" id="profUserRole">
+            <option value="Director / Directora">🎬 Director / Directora</option>
+            <option value="Productor / Productora">💼 Productor / Productora</option>
+            <option value="Guionista">✍️ Guionista</option>
+            <option value="Director/a de Fotografía (DF)">🎥 Director/a de Fotografía (DF)</option>
+            <option value="Director/a de Arte">🎨 Director/a de Arte</option>
+            <option value="Asistente de Dirección (AD)">📋 Asistente de Dirección (AD)</option>
+            <option value="Jefe/a de Producción">📦 Jefe/a de Producción</option>
+            <option value="Montajista / Editor">✂️ Montajista / Editor</option>
+            <option value="Diseñador/a de Sonido">🎧 Diseñador/a de Sonido</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Icono de Avatar</label>
+          <div class="avatar-selector">
+            <label><input type="radio" name="avatarIcon" value="🎬" checked> 🎬</label>
+            <label><input type="radio" name="avatarIcon" value="🎥"> 🎥</label>
+            <label><input type="radio" name="avatarIcon" value="✍️"> ✍️</label>
+            <label><input type="radio" name="avatarIcon" value="🎨"> 🎨</label>
+            <label><input type="radio" name="avatarIcon" value="💼"> 💼</label>
+            <label><input type="radio" name="avatarIcon" value="🎧"> 🎧</label>
+            <label><input type="radio" name="avatarIcon" value="✂️"> ✂️</label>
+          </div>
+        </div>
+        <div class="flex justify-end gap-sm mt-lg">
+          <button type="button" class="btn btn-ghost" id="btnCancelUserProfile">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Perfil</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Unirse a Proyecto por Código -->
+  <div class="modal-overlay" id="modalJoinProjectCode">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🔑 Unirse a un Proyecto con Código</h2>
+        <button class="modal-close" id="btnCloseJoinCode">&times;</button>
+      </div>
+      <form id="formJoinProjectCode" style="padding: var(--space-lg);">
+        <p class="text-secondary mb-md">Ingresa el código único de 6 caracteres (ej: <strong>CP-8492</strong>) que te compartió el director o productor del proyecto.</p>
+        <div class="form-group">
+          <label class="form-label">Código del Proyecto</label>
+          <input type="text" class="form-input" id="inputProjectCode" placeholder="Ej: CP-8492" style="font-size:1.4rem;letter-spacing:0.1em;text-transform:uppercase;text-align:center;font-weight:bold;" required>
+        </div>
+        <div class="flex justify-end gap-sm mt-lg">
+          <button type="button" class="btn btn-ghost" id="btnCancelJoinCode">Cancelar</button>
+          <button type="submit" class="btn btn-primary">🔍 Conectarse al Proyecto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>

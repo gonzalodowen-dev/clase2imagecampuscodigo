@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CinePrep Live Output | Monitor de Pre-Producción y Set</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/modules.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      background: #06070c;
+      color: #e1e4fa;
+      margin: 0;
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+    }
+    .output-header {
+      background: linear-gradient(180deg, #121422 0%, #0a0b14 100%);
+      border-bottom: 2px solid var(--accent-gold);
+      padding: 16px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .output-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .live-badge {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #4ade80;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .output-nav {
+      display: flex;
+      gap: 10px;
+      padding: 14px 28px;
+      background: #0b0c16;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .output-nav-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      color: var(--text-secondary);
+      padding: 8px 18px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .output-nav-btn.active, .output-nav-btn:hover {
+      background: var(--accent-gold);
+      color: #000000;
+      border-color: var(--accent-gold);
+      font-weight: 700;
+    }
+    .output-container {
+      padding: 32px 36px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .output-card {
+      background: var(--bg-elevated);
+      border: 1.5px solid var(--border-strong);
+      border-radius: var(--radius-xl);
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-lg);
+    }
+    .prompter-text {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.4rem;
+      line-height: 1.8;
+      color: #f1f3fd;
+      white-space: pre-wrap;
+      background: #0f111d;
+      padding: 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+    }
+  </style>
+</head>
+<body>
+  <!-- Output Header Bar -->
+  <header class="output-header">
+    <div class="output-title">
+        <button id="btnThemeToggleOutput" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.9rem;font-weight:bold;margin-right:12px;">☀️ Modo Claro / 🌙 Modo Oscuro</button>
+      <span>🎬</span> <span id="outProjName">CinePrep Live Output</span>
+      <span class="tag tag-gold" id="outProjFormato">Cortometraje</span>
+    </div>
+    <div class="flex items-center gap-md">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        <span>SINCRONIZADO EN TIEMPO REAL (SOCKET.IO)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Output Navigation Modes -->
+  <nav class="output-nav">
+    <button class="output-nav-btn active" data-mode="rodaje">🎬 Monitor de Rodaje</button>
+    <button class="output-nav-btn" data-mode="prompter">📝 Visor de Guion</button>
+    <button class="output-nav-btn" data-mode="tecnico">🎥 Guion Técnico</button>
+    <button class="output-nav-btn" data-mode="storyboard">🖼️ Storyboard & Moodboard</button>
+    <button class="output-nav-btn" data-mode="presupuesto">💰 Presupuesto Live</button>
+  </nav>
+
+  <!-- Main Output Display Area -->
+  <div class="output-container" id="outputContent">
+    <div class="empty-state">
+      <div class="empty-icon">🎬</div>
+      <h3>Esperando conexión del proyecto...</h3>
+      <p>Abre CinePrep en tu navegador o edita cualquier parámetro para sincronizar la salida visual en tiempo real.</p>
+    </div>
+  </div>
+
+  <script>
+    let currentProject = null;
+    let currentMode = 'rodaje';
+
+    // Initialize Socket.IO connection
+    const socket = typeof io !== 'undefined' ? io() : null;
+
+    // Theme handler for output.html
+    function initOutputTheme() {
+      const saved = localStorage.getItem('cineprep_theme') || 'dark';
+      document.body.classList.toggle('theme-dark', saved === 'dark');
+      const btn = document.getElementById('btnThemeToggleOutput');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const isDark = document.body.classList.contains('theme-dark');
+          const newTheme = isDark ? 'light' : 'dark';
+          document.body.classList.toggle('theme-dark', !isDark);
+          localStorage.setItem('cineprep_theme', newTheme);
+        });
+      }
+    }
+    initOutputTheme();
+
+    if (socket) {
+      socket.on('connect', () => {
+        console.log('[Live Output] Conectado al servidor Socket.IO');
+      });
+
+      socket.on('init-state', (state) => {
+        if (state && state.activeProjectData) {
+          currentProject = state.activeProjectData;
+          renderOutput();
+        }
+      });
+
+      socket.on('project-changed', (data) => {
+        if (data && data.project) {
+          currentProject = data.project;
+          renderOutput();
+        }
+      });
+    }
+
+    // Navigation Tabs Handler
+    document.querySelectorAll('.output-nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.output-nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentMode = btn.dataset.mode;
+        renderOutput();
+      });
+    });
+
+    function renderOutput() {
+      const p = currentProject;
+      if (!p) return;
+
+      document.getElementById('outProjName').innerText = p.name || 'Sin Nombre';
+      document.getElementById('outProjFormato').innerText = p.formato || 'Cortometraje';
+
+      const container = document.getElementById('outputContent');
+
+      if (currentMode === 'rodaje') {
+        renderRodajeMonitor(p, container);
+      } else if (currentMode === 'prompter') {
+        renderPrompter(p, container);
+      } else if (currentMode === 'tecnico') {
+        renderTecnico(p, container);
+      } else if (currentMode === 'storyboard') {
+        renderStoryboard(p, container);
+      } else if (currentMode === 'presupuesto') {
+        renderPresupuesto(p, container);
+      }
+    }
+
+    function renderRodajeMonitor(p, container) {
+      const rod = p.planRodaje || { dias: [] };
+      const contactos = p.contactos || [];
+
+      container.innerHTML = `
+        <div class="grid-3 mb-lg">
+          <div class="output-card card-accent">
+            <span class="text-muted text-xs">DIRECTOR/A</span>
+            <h2 style="color:var(--accent-gold);margin-top:4px">${p.director || 'N/I'}</h2>
+          </div>
+          <div class="output-card">
+            <span class="text-muted text-xs">PRODUCTORA</span>
+            <h2 class="output-text-primary" style="margin-top:4px">${p.productora || 'N/I'}</h2>
+          </div>
+          <div class="output-card">
+            <span class="text-muted text-xs">EQUIPO / CREW</span>
+            <h2 class="output-text-primary" style="margin-top:4px">${contactos.length} Integrantes</h2>
+          </div>
+        </div>
+
+        <div class="output-card">
+          <h2 style="margin-bottom:16px">📅 Plan de Rodaje Activo</h2>
+          ${(rod.dias || []).length === 0 ? '<p class="text-muted">Sin días de rodaje agendados aún.</p>' : `
+            <div class="grid-2">
+              ${rod.dias.map((d, i) => `
+                <div class="shooting-day card" class="output-card-item">
+                  <div class="day-title" style="color:var(--accent-gold);font-size:1.2rem">🎬 DÍA ${d.diaNumero || i + 1}</div>
+                  <div class="text-muted text-xs mt-xs">📍 ${d.locacion || 'Locación N/I'} | ⏰ Citación: ${d.callTime || '08:00'}</div>
+                  <div class="mt-md font-bold text-xs" style="text-transform:uppercase">Escenas a Filmase: ${(d.escenas || []).length}</div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function renderPrompter(p, container) {
+      const g = p.guion || {};
+      container.innerHTML = `
+        <div class="output-card mb-lg">
+          <h2 style="color:var(--accent-gold);margin-bottom:8px">💡 Logline</h2>
+          <p style="font-size:1.2rem;line-height:1.6">${g.logline || 'Sin logline definido.'}</p>
+        </div>
+        <div class="output-card">
+          <h2 style="margin-bottom:16px">📄 Guión Literario (Lectura / Prompter)</h2>
+          <div class="prompter-text">${g.guionTexto || 'Sin texto de guión ingresado.'}</div>
+        </div>
+      `;
+    }
+
+    function renderTecnico(p, container) {
+      const gt = p.guionTecnico || { planos: [] };
+      container.innerHTML = `
+        <div class="output-card">
+          <h2 style="margin-bottom:16px">🎥 Desglose de Guión Técnico (${(gt.planos || []).length} Planos)</h2>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Escena</th>
+                  <th>Plano</th>
+                  <th>Tipo de Plano</th>
+                  <th>Ángulo</th>
+                  <th>Movimiento</th>
+                  <th>Lente</th>
+                  <th>Descripción Visual</th>
+                  <th>Audio</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(gt.planos || []).map(pl => `
+                  <tr>
+                    <td><strong>${pl.escena || '1'}</strong></td>
+                    <td><span class="tag tag-gold">${pl.plano || '1'}</span></td>
+                    <td>${pl.tipoPlano || 'PM'}</td>
+                    <td>${pl.angulo || 'Normal'}</td>
+                    <td>${pl.movimiento || 'Fijo'}</td>
+                    <td>${pl.lente || '50mm'}</td>
+                    <td>${pl.descripcion || '-'}</td>
+                    <td>${pl.audio || '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStoryboard(p, container) {
+      const sb = p.storyboard || { frames: [] };
+      container.innerHTML = `
+        <div class="output-card">
+          <h2 style="margin-bottom:16px">🖼️ Storyboard & Cuadros de Secuencia (${(sb.frames || []).length} Frames)</h2>
+          <div class="storyboard-grid">
+            ${(sb.frames || []).map((f, i) => `
+              <div class="storyboard-frame">
+                <div class="frame-image">
+                  ${f.imagen ? `<img src="${f.imagen}" style="width:100%;height:100%;object-fit:cover">` : '🖼️'}
+                </div>
+                <div class="frame-info">
+                  <div class="frame-number">ESC ${f.escena || '1'} / PLANO ${f.plano || i + 1}</div>
+                  <div class="frame-desc">${f.accion || 'Sin acción'}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPresupuesto(p, container) {
+      const pres = p.presupuesto || { areas: [], moneda: 'ARS' };
+      let total = 0;
+      (pres.areas || []).forEach(a => {
+        (a.items || []).forEach(it => {
+          total += (parseFloat(it.cantidad) || 1) * (parseFloat(it.precioUnitario) || 0);
+        });
+      });
+
+      container.innerHTML = `
+        <div class="output-card card-accent mb-lg">
+          <span class="text-muted text-xs">PRESUPUESTO TOTAL ESTIMADO</span>
+          <h1 style="font-size:3rem;color:var(--accent-gold);margin-top:4px">$ ${total.toLocaleString('es-AR')} ${pres.moneda}</h1>
+        </div>
+
+        <div class="output-card">
+          <h2 style="margin-bottom:16px">📊 Distribución de Rubros por Departamento</h2>
+          <div class="grid-2">
+            ${(pres.areas || []).map(a => `
+              <div class="card" class="output-card-item">
+                <h3>${a.nombre}</h3>
+                <div class="text-muted text-xs mt-xs">${(a.items || []).length} rubros cargados</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
